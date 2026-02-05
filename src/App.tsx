@@ -584,6 +584,14 @@ export default function App() {
                     <span className="fightClock">{matchMeta?.durationSec != null ? fmtDuration(matchMeta.durationSec) : '—'}</span>
                     {fighters.winner ? <span className="fightWinner">Winner: {fighters.winner}</span> : null}
                   </div>
+
+                  {currentMatch?.status === 'complete' && fighters.winner ? (
+                    <div className="victorySplash" role="status" aria-label="Match result">
+                      <div className="victoryTitle">VICTORY</div>
+                      <div className="victoryName">{fighters.winner}</div>
+                      <div className="victorySub">The crowd roars. The arena remembers.</div>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 

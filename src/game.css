@@ -107,6 +107,46 @@
   color: rgba(248, 250, 252, 0.80);
 }
 
+@keyframes victoryPop {
+  0% { transform: translateY(8px) scale(0.98); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.victorySplash {
+  margin-top: 10px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(34, 211, 238, 0.20);
+  background:
+    radial-gradient(520px 220px at 18% 0%, rgba(34, 211, 238, 0.22), transparent 58%),
+    radial-gradient(520px 220px at 82% 0%, rgba(167, 139, 250, 0.16), transparent 62%),
+    linear-gradient(135deg, rgba(2, 6, 23, 0.62), rgba(2, 6, 23, 0.22));
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.05) inset;
+  animation: victoryPop 220ms ease-out;
+}
+
+.victoryTitle {
+  font-weight: 1000;
+  letter-spacing: 0.24em;
+  font-size: 0.78rem;
+  color: rgba(248, 250, 252, 0.78);
+}
+
+.victoryName {
+  margin-top: 4px;
+  font-weight: 1000;
+  font-size: 1.06rem;
+  color: rgba(34, 211, 238, 0.92);
+}
+
+.victorySub {
+  margin-top: 2px;
+  color: rgba(248, 250, 252, 0.62);
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
 @media (min-width: 720px) {
   .fightNameA, .fightNameB { font-size: 1.18rem; }
+  .victoryName { font-size: 1.14rem; }
 }

@@ -216,7 +216,6 @@ export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
 
   const [view, setView] = useState<'landing' | 'arena'>('landing')
-  const [overlayOpen, setOverlayOpen] = useState(true)
 
   const agentsById = useMemo(() => {
     const m = new Map<string, Agent>()
@@ -337,7 +336,6 @@ export default function App() {
                     className="ctaPrimary"
                     onClick={() => {
                       setView('arena')
-                      setOverlayOpen(true)
                     }}
                   >
                     Enter the Arena
@@ -346,7 +344,6 @@ export default function App() {
                     className="ctaGhost"
                     onClick={() => {
                       setView('arena')
-                      setOverlayOpen(true)
                       window.setTimeout(() => {
                         document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                       }, 0)
@@ -502,16 +499,7 @@ export default function App() {
             </button>
           </div>
 
-          {!overlayOpen ? (
-            <div className="reopenCenter">
-              <button className="ctaPrimary" onClick={() => setOverlayOpen(true)}>
-                Open arena
-              </button>
-            </div>
-          ) : null}
-
-          {overlayOpen ? (
-            <div className="overlay overlayArena">
+          <div className="overlay overlayArena">
               <div className="overlayHeader">
                 <div>
                   <div className="hudTitle">Clawosseum</div>
@@ -521,9 +509,7 @@ export default function App() {
                   <div className="lastUpdated">
                     Last updated: <span className="mono">{lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}</span>
                   </div>
-                  <button className="closeBtn" onClick={() => setOverlayOpen(false)}>
-                    Close
-                  </button>
+                  {/* no close button */}
                 </div>
               </div>
 
@@ -820,7 +806,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ) : null}
         </>
       ) : null}
       </main>

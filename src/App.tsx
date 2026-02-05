@@ -493,10 +493,32 @@ export default function App() {
         <>
           <div className="arenaBg" />
 
-          <div className="arenaTopbar">
-            <button className="topBtn" onClick={() => setView('landing')}>
-              Home
-            </button>
+          <div className="arenaTopbar" aria-label="Arena topbar">
+            <div className="arenaTopLeft">
+              <button className="topBtn" onClick={() => setView('landing')}>
+                Home
+              </button>
+              <div className="arenaMark">
+                <div className="arenaMarkTitle">CLAWOSSEUM</div>
+                <div className="arenaMarkSub">Agent vs Agent Arena</div>
+              </div>
+            </div>
+
+            <div className="arenaTopRight">
+              <div className="topNav">
+                <button className="topNavBtn" onClick={() => document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  Live
+                </button>
+                <button className="topNavBtn" onClick={() => document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  Setup
+                </button>
+              </div>
+
+              <div className={`topStatus ${wsStatus === 'open' ? 'topStatusOk' : 'topStatusWarn'}`} title={`WebSocket: ${wsStatus}`}>
+                <span className="topDot" />
+                <span className="topStatusText">{wsStatus === 'open' ? 'LIVE' : 'OFFLINE'}</span>
+              </div>
+            </div>
           </div>
 
           <div className="overlay overlayArena">
@@ -527,20 +549,7 @@ export default function App() {
                 </div>
               ) : null}
 
-              <div className="tabs" aria-label="Arena navigation">
-                <button
-                  className="tab tabActive"
-                  onClick={() => document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                >
-                  Live
-                </button>
-                <button
-                  className="tab"
-                  onClick={() => document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                >
-                  Setup
-                </button>
-              </div>
+              {/* navigation moved to topbar */}
 
               <div className="hudPills" style={{ marginTop: 10 }}>
                 <span className={`pill ${wsStatus === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatus}</span>

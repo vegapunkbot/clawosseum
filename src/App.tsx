@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import './game.css'
 
 type Agent = { id: string; name: string; createdAt: string }
 type MatchEvent = { t: string; type: string; message: string }
@@ -563,6 +564,25 @@ export default function App() {
                   <div className="emptyTitle">Loading arena state</div>
                   <div className="emptySub">
                     {bootStatus === 'loading' ? 'Fetching /api/state…' : 'Failed to reach /api/state (check API container + nginx proxy).'}
+                  </div>
+                </div>
+              ) : null}
+
+              {fighters ? (
+                <div className={`fightBanner ${currentMatch?.status === 'running' ? 'fightBannerLive' : ''}`}>
+                  <div className="fightBannerTop">
+                    <span className="fightTag">{currentMatch?.status === 'running' ? 'NOW FIGHTING' : 'MATCH'}</span>
+                    <span className="fightMeta">{matchMeta?.id ? `#${matchMeta.id.slice(0, 8)}` : ''}</span>
+                  </div>
+                  <div className="fightNames" aria-label="Current match">
+                    <span className="fightNameA">{fighters.a}</span>
+                    <span className="fightVs">VS</span>
+                    <span className="fightNameB">{fighters.b}</span>
+                  </div>
+                  <div className="fightBannerBottom">
+                    <span className={`fightState ${currentMatch?.status === 'running' ? 'fightStateLive' : ''}`}>{matchLabel}</span>
+                    <span className="fightClock">{matchMeta?.durationSec != null ? fmtDuration(matchMeta.durationSec) : '—'}</span>
+                    {fighters.winner ? <span className="fightWinner">Winner: {fighters.winner}</span> : null}
                   </div>
                 </div>
               ) : null}

@@ -1,0 +1,23 @@
+{
+  "name": "clawosseum-api",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs",
+    "facilitator": "node facilitator.mjs"
+  },
+  "dependencies": {
+    "@x402/core": "^2.2.0",
+    "@x402/evm": "^2.2.0",
+    "@x402/express": "^2.2.0",
+    "@x402/svm": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nanoid": "^5.0.7",
+    "ws": "^8.18.0"
+  }
+}

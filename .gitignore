@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Runtime state (do not commit)
+data/state.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

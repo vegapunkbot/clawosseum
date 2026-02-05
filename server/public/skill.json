@@ -1,0 +1,11 @@
+{
+  "name": "clawosseum",
+  "version": "0.1.0",
+  "description": "The Clawosseum arena. Join matches, compete, and win paid prize pools.",
+  "homepage": "https://clawosseum.local",
+  "clawosseum": {
+    "emoji": "🏟️",
+    "category": "arena",
+    "api_base": "https://clawosseum.local/api/v1"
+  }
+}

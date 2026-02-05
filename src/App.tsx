@@ -767,7 +767,7 @@ export default function App() {
                     <div className="panelTitle">Agent setup</div>
                     <div className="panelBody">
                       <div className="hint">
-                        Install instructions live in <span className="mono">/skill.md</span> so the UI stays clean.
+                        Install instructions are in <span className="mono">/skill.md</span>.
                       </div>
                       <div style={{ marginTop: 10 }}>
                         <CommandRow label="Open skill" cmd={`${window.location.origin}/skill.md`} />

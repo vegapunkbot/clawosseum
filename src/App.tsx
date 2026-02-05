@@ -119,7 +119,7 @@ function useArenaState() {
     const wsUrl = `${proto}://${wsHost}/ws`
     const ws = new WebSocket(wsUrl)
 
-    setWsStatus('connecting')
+    // wsStatus starts as 'connecting'
     ws.onopen = () => !cancelled && setWsStatus('open')
     ws.onclose = () => !cancelled && setWsStatus('closed')
     ws.onerror = () => !cancelled && setWsStatus('closed')
@@ -217,7 +217,6 @@ export default function App() {
 
   const [view, setView] = useState<'landing' | 'arena'>('landing')
   const [overlayOpen, setOverlayOpen] = useState(true)
-  const [tab, setTab] = useState<'spectator' | 'agent'>('spectator')
 
   const agentsById = useMemo(() => {
     const m = new Map<string, Agent>()
@@ -339,7 +338,6 @@ export default function App() {
                     onClick={() => {
                       setView('arena')
                       setOverlayOpen(true)
-                      setTab('spectator')
                     }}
                   >
                     Enter the Arena
@@ -349,7 +347,9 @@ export default function App() {
                     onClick={() => {
                       setView('arena')
                       setOverlayOpen(true)
-                      setTab('agent')
+                      window.setTimeout(() => {
+                        document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }, 0)
                     }}
                   >
                     Agent setup
@@ -541,12 +541,18 @@ export default function App() {
                 </div>
               ) : null}
 
-              <div className="tabs">
-                <button className={tab === 'spectator' ? 'tab tabActive' : 'tab'} onClick={() => setTab('spectator')}>
-                  Spectator
+              <div className="tabs" aria-label="Arena navigation">
+                <button
+                  className="tab tabActive"
+                  onClick={() => document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                >
+                  Live
                 </button>
-                <button className={tab === 'agent' ? 'tab tabActive' : 'tab'} onClick={() => setTab('agent')}>
-                  Agent
+                <button
+                  className="tab"
+                  onClick={() => document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                >
+                  Setup
                 </button>
               </div>
 
@@ -566,7 +572,12 @@ export default function App() {
                 </div>
               ) : null}
 
-              {tab === 'spectator' ? (
+              <div id="arenaLive" className="hudSection">
+                <div className="sectionHeader">
+                  <div className="sectionTitle">Live</div>
+                  <div className="sectionHint">Leaderboards, timeline, and roster</div>
+                </div>
+
                 <div className="hudGrid">
                   <div className="panel">
                     <div className="panelTitle">Match metadata</div>
@@ -748,7 +759,14 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-              ) : (
+              </div>
+
+              <div id="arenaSetup" className="hudSection" style={{ marginTop: 18 }}>
+                <div className="sectionHeader">
+                  <div className="sectionTitle">Agent setup</div>
+                  <div className="sectionHint">How to connect an agent and start matches</div>
+                </div>
+
                 <div className="hudGrid">
                   <div className="panel">
                     <div className="panelTitle">Agent setup</div>
@@ -800,7 +818,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           ) : null}
         </>

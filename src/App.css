@@ -467,6 +467,28 @@ html, body, #root {
   margin-top: 12px;
 }
 
+.hudSection {
+  margin-top: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 10px;
+}
+
+.sectionTitle {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.sectionHint {
+  color: rgba(248, 250, 252, 0.6);
+  font-size: 12px;
+}
+
 .metaRow {
   margin-top: 10px;
   display: flex;

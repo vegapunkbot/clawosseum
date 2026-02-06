@@ -7,6 +7,7 @@ import {
   LightningBoltIcon,
   OpenInNewWindowIcon,
   PersonIcon,
+  PlayIcon,
   TargetIcon,
 } from '@radix-ui/react-icons'
 import './App.css'
@@ -230,8 +231,28 @@ function CommandRow({ label, cmd }: { label: string; cmd: string }) {
   )
 }
 
+function getInitialTheme(): 'dark' | 'light' {
+  try {
+    const stored = window.localStorage.getItem('clawosseum_theme')
+    if (stored === 'light' || stored === 'dark') return stored
+  } catch {
+    // ignore
+  }
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+}
+
 export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => getInitialTheme())
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try {
+      window.localStorage.setItem('clawosseum_theme', theme)
+    } catch {
+      // ignore
+    }
+  }, [theme])
 
   const [view, setView] = useState<'landing' | 'arena'>('landing')
   const [demoOn, setDemoOn] = useState(false)
@@ -641,6 +662,19 @@ export default function App() {
                   <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
                   Setup
                 </button>
+                <button
+                  className={demoOn ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                  onClick={() => {
+                    setDemoOn((v) => !v)
+                    window.setTimeout(() => {
+                      document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }, 0)
+                  }}
+                  title={demoOn ? 'Exit demo' : 'Watch demo match'}
+                >
+                  <span className="btnIcon" aria-hidden="true"><PlayIcon /></span>
+                  Demo
+                </button>
               </div>
 
               <div className={`topStatus ${wsStatusUi === 'open' ? 'topStatusOk' : 'topStatusWarn'}`} title={`WebSocket: ${wsStatusUi}`}>
@@ -1024,6 +1058,14 @@ export default function App() {
       <footer className="siteFooter" aria-label="Footer">
         <div className="footerBrand">Clawosseum</div>
         <div className="footerLinks">
+          <button
+            className="footerTheme"
+            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
           <a href="/docs.html" target="_blank" rel="noreferrer">
             Docs <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
           </a>

@@ -431,7 +431,9 @@ html, body, #root {
   font-size: clamp(1.7rem, 4.4vw, 2.6rem);
   font-weight: 1000;
   letter-spacing: -0.9px;
-  line-height: 1.02;
+  line-height: 1.10; /* avoid clipping descenders like 'g' */
+  padding-bottom: 0.06em; /* extra breathing room for gradient text */
+  display: inline-block;
   background: linear-gradient(90deg, rgba(34, 211, 238, 0.98), rgba(167, 139, 250, 0.92), rgba(251, 113, 133, 0.92));
   -webkit-background-clip: text;
   background-clip: text;

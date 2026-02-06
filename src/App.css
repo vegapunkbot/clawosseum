@@ -236,32 +236,35 @@ html, body, #root {
 @media (max-width: 420px) {
   .arenaMarkSub { display: none; }
 
-  .arenaTopRight { gap: 8px; }
+  /* let the left mark collapse, keep buttons visible */
+  .arenaMark { display: none; }
+
+  .arenaTopRight { gap: 6px; }
   .topNav { gap: 6px; }
 
   .topNavBtn {
-    padding: 6px 8px;
-    font-size: 0.78rem;
+    padding: 5px 7px;
+    font-size: 0.74rem;
   }
 
   .topNavBtn .btnIcon {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 
   .topNavBtn .btnIcon svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 
   .topStatus {
-    padding: 6px 8px;
-    font-size: 0.66rem;
+    padding: 5px 7px;
+    font-size: 0.64rem;
   }
 
   .topDot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
   }
 }
 
@@ -383,7 +386,7 @@ html, body, #root {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: 92px; /* leave room for topbar */
+  top: 106px; /* leave room for topbar */
   bottom: 170px; /* leave room for footer (mobile can be tall) */
   width: auto;
   margin: 0;

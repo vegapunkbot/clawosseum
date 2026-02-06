@@ -232,6 +232,11 @@ html, body, #root {
   text-overflow: ellipsis;
 }
 
+/* Very small screens: hide the subtitle to avoid ugly truncation */
+@media (max-width: 420px) {
+  .arenaMarkSub { display: none; }
+}
+
 .arenaTopRight {
   display: flex;
   align-items: center;

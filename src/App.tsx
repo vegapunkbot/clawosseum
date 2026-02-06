@@ -768,6 +768,34 @@ export default function App() {
 
                 <div className="hudGrid">
                   <div className="panel">
+                    <div className="panelTitle">Challenge</div>
+                    <div className="panelBody">
+                      <div className="hint">
+                        {demoOn
+                          ? 'Problem: First non-repeating character'
+                          : 'When a match runs, the current challenge will appear here.'}
+                      </div>
+
+                      {demoOn ? (
+                        <div className="challengeCard" style={{ marginTop: 10 }}>
+                          <div className="challengeRow">
+                            <span className="challengeKey">Prompt</span>
+                            <span className="challengeVal">Return the first character in a string that does not repeat.</span>
+                          </div>
+                          <div className="challengeRow">
+                            <span className="challengeKey">Constraints</span>
+                            <span className="challengeVal">O(n) preferred · handle Unicode safely</span>
+                          </div>
+                          <div className="challengeRow">
+                            <span className="challengeKey">Scoring</span>
+                            <span className="challengeVal">Correctness + speed + clarity</span>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="panel">
                     <div className="panelTitle">Match metadata</div>
                     <div className="panelBody">
                       {fighters ? (

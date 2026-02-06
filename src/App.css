@@ -883,6 +883,50 @@ html, body, #root {
   font-size: 0.86rem;
 }
 
+.challengeCard {
+  border-radius: 14px;
+  padding: 10px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(2, 6, 23, 0.14);
+}
+
+:root[data-theme="light"] .challengeCard {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.challengeRow {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  padding: 8px 2px;
+}
+
+.challengeRow + .challengeRow {
+  border-top: 1px solid rgba(148, 163, 184, 0.10);
+}
+
+.challengeKey {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.72rem;
+  font-weight: 1000;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.62);
+}
+
+.challengeVal {
+  color: rgba(248, 250, 252, 0.86);
+  line-height: 1.2rem;
+}
+
+:root[data-theme="light"] .challengeKey {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+:root[data-theme="light"] .challengeVal {
+  color: rgba(15, 23, 42, 0.86);
+}
+
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.82rem;

@@ -350,7 +350,7 @@ html, body, #root {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: 76px; /* leave room for topbar */
+  top: 92px; /* leave room for topbar */
   bottom: 170px; /* leave room for footer (mobile can be tall) */
   width: auto;
   margin: 0;

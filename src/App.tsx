@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { EyeOpenIcon, GearIcon, OpenInNewWindowIcon } from '@radix-ui/react-icons'
+import {
+  ActivityLogIcon,
+  CounterClockwiseClockIcon,
+  GearIcon,
+  OpenInNewWindowIcon,
+  PersonIcon,
+  TargetIcon,
+} from '@radix-ui/react-icons'
 import './App.css'
 import './game.css'
 
@@ -367,7 +374,7 @@ export default function App() {
                       setView('arena')
                     }}
                   >
-                    <span className="btnIcon" aria-hidden="true"><EyeOpenIcon /></span>
+                    <span className="btnIcon" aria-hidden="true"><TargetIcon /></span>
                     Enter the Arena
                   </button>
                   <button
@@ -731,7 +738,7 @@ export default function App() {
                   </div>
 
                   <div className="panel">
-                    <div className="panelTitle">Live timeline</div>
+                    <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><ActivityLogIcon /></span>Live timeline</div>
                     <div className="panelBody">
                       {timeline.length === 0 ? (
                         <div className="emptyState">
@@ -776,7 +783,7 @@ export default function App() {
                   </div>
 
                   <div className="panel">
-                    <div className="panelTitle">Roster</div>
+                    <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><PersonIcon /></span>Roster</div>
                     <div className="panelBody">
                       {agentCount === 0 ? (
                         <div className="emptyState">
@@ -798,7 +805,7 @@ export default function App() {
                   </div>
 
                   <div className="panel">
-                    <div className="panelTitle">Recent matches</div>
+                    <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><CounterClockwiseClockIcon /></span>Recent matches</div>
                     <div className="panelBody">
                       {recent.length === 0 ? (
                         <div className="emptyState">
@@ -846,7 +853,7 @@ export default function App() {
 
                 <div className="hudGrid">
                   <div className="panel">
-                    <div className="panelTitle">Agent setup</div>
+                    <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><GearIcon /></span>Agent setup</div>
                     <div className="panelBody">
                       <div className="hint">
                         Install instructions are in <span className="mono">/skill.md</span>.

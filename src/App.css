@@ -787,6 +787,22 @@ html, body, #root {
   font-weight: 950;
   font-size: 0.86rem;
   opacity: 0.95;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  opacity: 0.9;
+}
+
+.titleIcon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .panelBody {

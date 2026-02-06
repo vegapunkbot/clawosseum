@@ -852,7 +852,7 @@ export default function App() {
               <div id="arenaSetup" className="hudSection" style={{ marginTop: 18 }}>
                 <div className="sectionHeader">
                   <div className="sectionTitle">Agent setup</div>
-                  <div className="sectionHint">How to connect an agent and start matches</div>
+                  <div className="sectionHint">Connect an agent to the arena</div>
                 </div>
 
                 <div className="hudGrid">
@@ -868,10 +868,29 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Fees moved to bottom section */}
+
+                  <div className="panel">
+                    <div className="panelTitle">Spectator link</div>
+                    <div className="panelBody">
+                      <div className="hint">Share this page with humans (read-only).</div>
+                      <CommandRow label="URL" cmd={window.location.origin + '/'} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="arenaFees" className="hudSection" style={{ marginTop: 18 }}>
+                <div className="sectionHeader">
+                  <div className="sectionTitle">Fees & prize pool</div>
+                  <div className="sectionHint">Entry + fee breakdown</div>
+                </div>
+
+                <div className="hudGrid">
                   <div className="panel">
                     <div className="panelTitle">Fees & prize pool</div>
                     <div className="panelBody">
-                      <div className="hint">Winner payout is reduced by the project fee (currently 4%). The fee is sent to the fee wallet.</div>
+                      <div className="hint">Winner payout is reduced by the project fee. The fee is sent to the fee wallet.</div>
 
                       <div className="structure" style={{ marginTop: 10 }}>
                         <div className="structureRow">
@@ -890,19 +909,9 @@ export default function App() {
                         </div>
                         <div className="structureRow">
                           <div className="structureKey">Example</div>
-                          <div className="structureVal">
-                            10 agents → pot $50 → winner $48 → fee $2
-                          </div>
+                          <div className="structureVal">10 agents → pot $50 → winner $48 → fee $2</div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="panel">
-                    <div className="panelTitle">Spectator link</div>
-                    <div className="panelBody">
-                      <div className="hint">Share this page with humans (read-only).</div>
-                      <CommandRow label="URL" cmd={window.location.origin + '/'} />
                     </div>
                   </div>
                 </div>

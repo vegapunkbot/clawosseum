@@ -222,8 +222,7 @@ app.get('/api/tournaments', (_req, res) => {
   res.json({ ok: true, tournaments: state.tournaments || [] })
 })
 
-app.post('/api/tournaments', (req, res) => {
-  if (!requireAgentToken(req, res)) return
+app.post('/api/tournaments', writeLimiter, jwtRequired, (req, res) => {
   const name = (req.body?.name || '').toString().trim() || `Tournament ${nanoid(4)}`
   const maxParticipants = Number(req.body?.maxParticipants || 10)
   const entryPrice = (req.body?.entryPrice || X402_ENTRY_PRICE || '$5').toString().trim()
@@ -253,7 +252,7 @@ app.post('/api/tournaments', (req, res) => {
 })
 
 // Paid endpoint (x402 middleware enforces payment when enabled)
-app.post('/api/tournament-enter', (req, res) => {
+app.post('/api/tournament-enter', writeLimiter, jwtRequired, (req, res) => {
   const tournamentId = (req.body?.tournamentId || '').toString().trim()
   const agentId = (req.body?.agentId || '').toString().trim()
   if (!tournamentId) return res.status(400).json({ ok: false, error: 'tournamentId required' })
@@ -291,22 +290,9 @@ app.post('/api/tournament-enter', (req, res) => {
   res.json({ ok: true, tournament: t, joined: true })
 })
 
-function requireAgentToken(req, res) {
-  const required = (process.env.ARENA_AGENT_TOKEN || '').trim()
-  if (!required) return true
-  const h = req.headers
-  const bearer = typeof h.authorization === 'string' ? h.authorization : ''
-  const token = (typeof h['x-arena-token'] === 'string' ? h['x-arena-token'] : '')
-  const provided = bearer.startsWith('Bearer ') ? bearer.slice('Bearer '.length).trim() : token.trim()
-  if (!provided || provided !== required) {
-    res.status(401).json({ ok: false, error: 'agent token required' })
-    return false
-  }
-  return true
-}
+// JWT is required for POST endpoints (see jwtRequired middleware).
 
-app.post('/api/agents', (req, res) => {
-  if (!requireAgentToken(req, res)) return
+app.post('/api/agents', writeLimiter, jwtRequired, (req, res) => {
   const name = (req.body?.name || '').toString().trim()
   if (!name || name.length > 64) return res.status(400).json({ ok: false, error: 'name required (<=64 chars)' })
 
@@ -338,8 +324,7 @@ app.post('/api/v1/arena/join', writeLimiter, jwtRequired, (req, res) => {
   res.json({ ok: true, agent })
 })
 
-app.post('/api/matches/start', (req, res) => {
-  if (!requireAgentToken(req, res)) return
+app.post('/api/matches/start', writeLimiter, jwtRequired, (req, res) => {
   const aId = (req.body?.aId || '').toString().trim()
   const bId = (req.body?.bId || '').toString().trim()
 
@@ -392,8 +377,7 @@ app.post('/api/matches/start', (req, res) => {
   res.json({ ok: true, match })
 })
 
-app.post('/api/season/reset', (req, res) => {
-  if (!requireAgentToken(req, res)) return
+app.post('/api/season/reset', writeLimiter, jwtRequired, (req, res) => {
 
   const old = state.season
   const nextNumber = (Number(old?.number) || 1) + 1
@@ -412,8 +396,7 @@ app.post('/api/season/reset', (req, res) => {
   res.json({ ok: true, season: state.season, previous: old })
 })
 
-app.post('/api/matches/:id/resolve', (req, res) => {
-  if (!requireAgentToken(req, res)) return
+app.post('/api/matches/:id/resolve', writeLimiter, jwtRequired, (req, res) => {
   const id = req.params.id
   const winnerId = req.body?.winnerId ? String(req.body.winnerId) : undefined
   const out = resolveMatch(id, winnerId)

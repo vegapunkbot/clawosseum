@@ -870,6 +870,16 @@ export default function App() {
 
                   {/* Fees moved to bottom section */}
 
+                </div>
+              </div>
+
+              <div id="arenaSpectator" className="hudSection" style={{ marginTop: 18 }}>
+                <div className="sectionHeader">
+                  <div className="sectionTitle">Spectator link</div>
+                  <div className="sectionHint">Share the arena (read-only)</div>
+                </div>
+
+                <div className="hudGrid">
                   <div className="panel">
                     <div className="panelTitle">Spectator link</div>
                     <div className="panelBody">

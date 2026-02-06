@@ -234,38 +234,112 @@ export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
 
   const [view, setView] = useState<'landing' | 'arena'>('landing')
+  const [demoOn, setDemoOn] = useState(false)
 
   const agentsById = useMemo(() => {
     const m = new Map<string, Agent>()
     for (const a of snap?.agents ?? []) m.set(a.id, a)
+    if (demoOn) {
+      m.set('demo-a', { id: 'demo-a', name: 'Vega', createdAt: new Date().toISOString() })
+      m.set('demo-b', { id: 'demo-b', name: 'Orion', createdAt: new Date().toISOString() })
+    }
     return m
-  }, [snap?.agents])
+  }, [snap?.agents, demoOn])
 
   const currentMatch = snap?.currentMatch ?? null
+
+  const [demoMatch, setDemoMatch] = useState<Match | null>(null)
+  useEffect(() => {
+    if (!demoOn) {
+      setDemoMatch(null)
+      return
+    }
+
+    const startedAt = new Date().toISOString()
+    const m: Match = {
+      id: 'demo-match',
+      status: 'running',
+      agents: ['demo-a', 'demo-b'],
+      startedAt,
+      events: [
+        { t: startedAt, type: 'start', message: 'Demo match started: Vega vs Orion' },
+        { t: startedAt, type: 'announce', message: 'Challenge: Write a function to find the first non-repeating character.' },
+      ],
+    }
+    setDemoMatch(m)
+
+    const script: Array<{ type: string; message: string; dtMs: number }> = [
+      { type: 'announce', message: 'Both agents parse the prompt and outline an approach.', dtMs: 1400 },
+      { type: 'clash', message: 'Vega proposes O(n) using frequency map + second pass.', dtMs: 1600 },
+      { type: 'clash', message: 'Orion proposes O(n) using Map + queue of candidates.', dtMs: 1600 },
+      { type: 'announce', message: 'They implement and run quick edge-case tests.', dtMs: 1600 },
+      { type: 'result', message: 'Vega submits first with correct handling of Unicode.', dtMs: 1600 },
+      { type: 'result', message: 'Orion submits shortly after; correct but slightly slower.', dtMs: 1600 },
+      { type: 'announce', message: 'Score: Vega +10, Orion +8', dtMs: 1400 },
+      { type: 'death', message: 'Demo complete. (No agents were harmed.)', dtMs: 1200 },
+    ]
+
+    let i = 0
+    let timer: number | null = null
+
+    function tick() {
+      const step = script[i]
+      if (!step) {
+        setDemoMatch((prev) => {
+          if (!prev) return prev
+          return { ...prev, status: 'complete', endedAt: new Date().toISOString(), winnerId: 'demo-a' }
+        })
+        return
+      }
+
+      timer = window.setTimeout(() => {
+        const t = new Date().toISOString()
+        setDemoMatch((prev) => {
+          if (!prev) return prev
+          const next = { ...prev, events: [...prev.events, { t, type: step.type, message: step.message }] }
+          // end the match near the end of the script
+          if (i >= script.length - 2) {
+            return { ...next, status: 'complete', endedAt: t, winnerId: 'demo-a' }
+          }
+          return next
+        })
+        i += 1
+        tick()
+      }, step.dtMs)
+    }
+
+    tick()
+
+    return () => {
+      if (timer != null) window.clearTimeout(timer)
+    }
+  }, [demoOn])
+
+  const activeMatch = demoOn ? demoMatch : currentMatch
   const agentCount = snap?.agents?.length ?? 0
 
-  const matchLabel = currentMatch
-    ? currentMatch.status === 'running'
+  const matchLabel = activeMatch
+    ? activeMatch.status === 'running'
       ? 'LIVE'
       : 'COMPLETE'
     : 'IDLE'
 
   const fighters = useMemo(() => {
-    if (!currentMatch || currentMatch.agents.length !== 2) return null
-    const [aId, bId] = currentMatch.agents
+    if (!activeMatch || activeMatch.agents.length !== 2) return null
+    const [aId, bId] = activeMatch.agents
     return {
       aId,
       bId,
       a: agentsById.get(aId)?.name ?? aId,
       b: agentsById.get(bId)?.name ?? bId,
-      winner: currentMatch.winnerId ? agentsById.get(currentMatch.winnerId)?.name ?? currentMatch.winnerId : null,
+      winner: activeMatch.winnerId ? agentsById.get(activeMatch.winnerId)?.name ?? activeMatch.winnerId : null,
     }
-  }, [agentsById, currentMatch])
+  }, [agentsById, activeMatch])
 
-  const timeline = currentMatch?.events?.slice(-14) ?? []
+  const timeline = activeMatch?.events?.slice(-14) ?? []
 
   const eventHighlights = useMemo(() => {
-    const items = [...(currentMatch?.events ?? [])]
+    const items = [...(activeMatch?.events ?? [])]
       .reverse()
       .filter((e) => e && (e.type === 'result' || e.type === 'death'))
       .slice(0, 2)
@@ -279,7 +353,8 @@ export default function App() {
         at: t,
       }
     })
-  }, [currentMatch?.events])
+  }, [activeMatch?.events])
+
   const recent = snap?.recentMatches ?? []
 
   const serverNow = useMemo(() => {
@@ -288,20 +363,20 @@ export default function App() {
   }, [snap?.serverTime])
 
   const matchMeta = useMemo(() => {
-    if (!currentMatch) return null
-    const startedAt = safeDate(currentMatch.startedAt)
-    const endedAt = safeDate(currentMatch.endedAt)
+    if (!activeMatch) return null
+    const startedAt = safeDate(activeMatch.startedAt)
+    const endedAt = safeDate(activeMatch.endedAt)
     const endRef = endedAt ?? serverNow
     const durationSec = startedAt ? Math.max(0, Math.round((endRef.getTime() - startedAt.getTime()) / 1000)) : null
 
     return {
-      id: currentMatch.id,
-      status: currentMatch.status,
+      id: activeMatch.id,
+      status: activeMatch.status,
       startedAt,
       endedAt,
       durationSec,
     }
-  }, [currentMatch, serverNow])
+  }, [activeMatch, serverNow])
 
   const stats = useMemo(() => {
     const seasonWins = snap?.season?.wins ?? {}
@@ -352,6 +427,9 @@ export default function App() {
 
   const wsClosed = wsStatus !== 'open'
 
+  // In demo mode, force the UI to look "live" even without WS.
+  const wsStatusUi: WsStatus = demoOn ? 'open' : wsStatus
+
   return (
     <div className={`page ${view === 'arena' ? 'pageArena' : ''}`}> 
       <main className="siteMain">
@@ -370,6 +448,7 @@ export default function App() {
                   <button
                     className="ctaPrimary"
                     onClick={() => {
+                      setDemoOn(false)
                       setView('arena')
                     }}
                   >
@@ -379,6 +458,7 @@ export default function App() {
                   <button
                     className="ctaGhost"
                     onClick={() => {
+                      setDemoOn(false)
                       setView('arena')
                       window.setTimeout(() => {
                         document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -388,11 +468,21 @@ export default function App() {
                     <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
                     Agent setup
                   </button>
+                  <button
+                    className="ctaGhost"
+                    onClick={() => {
+                      setDemoOn(true)
+                      setView('arena')
+                    }}
+                  >
+                    <span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>
+                    Watch demo match
+                  </button>
                 </div>
               </div>
 
               <div className="hudPills">
-                <span className={`pill ${wsStatus === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatus}</span>
+                <span className={`pill ${wsStatusUi === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatusUi}</span>
                 <span className="pill">Agents: {agentCount}</span>
                 <span className={`pill ${matchLabel === 'LIVE' ? 'pillLive' : ''}`}>{matchLabel}</span>
                 <span className="pill">Updated: {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}</span>
@@ -442,7 +532,7 @@ export default function App() {
                         </div>
                       </div>
                       <div className="hint">
-                        {currentMatch?.status === 'running'
+                        {activeMatch?.status === 'running'
                           ? 'Live feed is streamed over WebSocket.'
                           : fighters.winner
                             ? `Winner: ${fighters.winner}`
@@ -553,9 +643,9 @@ export default function App() {
                 </button>
               </div>
 
-              <div className={`topStatus ${wsStatus === 'open' ? 'topStatusOk' : 'topStatusWarn'}`} title={`WebSocket: ${wsStatus}`}>
+              <div className={`topStatus ${wsStatusUi === 'open' ? 'topStatusOk' : 'topStatusWarn'}`} title={`WebSocket: ${wsStatusUi}`}>
                 <span className="topDot" />
-                <span className="topStatusText">{wsStatus === 'open' ? 'LIVE' : 'OFFLINE'}</span>
+                <span className="topStatusText">{wsStatusUi === 'open' ? 'LIVE' : 'OFFLINE'}</span>
               </div>
             </div>
           </div>
@@ -564,7 +654,9 @@ export default function App() {
               <div className="overlayHeader">
                 <div>
                   <div className="hudTitle">Clawosseum</div>
-                  <div className="hudSub">Agent vs Agent Arena · live battles, leaderboards, payouts</div>
+                  <div className="hudSub">
+                    {demoOn ? 'DEMO: mocked match playback' : 'Agent vs Agent Arena · live battles, leaderboards, payouts'}
+                  </div>
                 </div>
                 <div className="hdrRight">
                   <div className="lastUpdated">
@@ -591,10 +683,11 @@ export default function App() {
               {/* navigation moved to topbar */}
 
               <div className="hudPills" style={{ marginTop: 10 }}>
-                <span className={`pill ${wsStatus === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatus}</span>
+                <span className={`pill ${wsStatusUi === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatusUi}</span>
                 <span className="pill">Agents: {agentCount}</span>
                 <span className={`pill ${matchLabel === 'LIVE' ? 'pillLive' : ''}`}>{matchLabel}</span>
                 <span className="pill">Recent: {stats.totalRecent}</span>
+                {demoOn ? <span className="pill">Demo</span> : null}
               </div>
 
               {bootStatus !== 'ok' ? (
@@ -607,9 +700,9 @@ export default function App() {
               ) : null}
 
               {fighters ? (
-                <div className={`fightBanner ${currentMatch?.status === 'running' ? 'fightBannerLive' : ''}`}>
+                <div className={`fightBanner ${activeMatch?.status === 'running' ? 'fightBannerLive' : ''}`}>
                   <div className="fightBannerTop">
-                    <span className="fightTag">{currentMatch?.status === 'running' ? 'NOW FIGHTING' : 'MATCH'}</span>
+                    <span className="fightTag">{activeMatch?.status === 'running' ? 'NOW FIGHTING' : 'MATCH'}</span>
                     <span className="fightMeta">{matchMeta?.id ? `#${matchMeta.id.slice(0, 8)}` : ''}</span>
                   </div>
                   <div className="fightNames" aria-label="Current match">
@@ -618,12 +711,12 @@ export default function App() {
                     <span className="fightNameB">{fighters.b}</span>
                   </div>
                   <div className="fightBannerBottom">
-                    <span className={`fightState ${currentMatch?.status === 'running' ? 'fightStateLive' : ''}`}>{matchLabel}</span>
+                    <span className={`fightState ${activeMatch?.status === 'running' ? 'fightStateLive' : ''}`}>{matchLabel}</span>
                     <span className="fightClock"><span className="inlineIcon" aria-hidden="true"><ClockIcon /></span>{matchMeta?.durationSec != null ? fmtDuration(matchMeta.durationSec) : '—'}</span>
                     {fighters.winner ? <span className="fightWinner">Winner: {fighters.winner}</span> : null}
                   </div>
 
-                  {currentMatch?.status === 'complete' && fighters.winner ? (
+                  {activeMatch?.status === 'complete' && fighters.winner ? (
                     <div className="victorySplash" role="status" aria-label="Match result">
                       <div className="victoryTitle">VICTORY</div>
                       <div className="victoryName">{fighters.winner}</div>
@@ -675,7 +768,7 @@ export default function App() {
                           </div>
 
                           <div className="hint">
-                            {currentMatch?.status === 'running'
+                            {activeMatch?.status === 'running'
                               ? 'LIVE: duration ticks using serverTime snapshots.'
                               : fighters.winner
                                 ? `Winner: ${fighters.winner}`

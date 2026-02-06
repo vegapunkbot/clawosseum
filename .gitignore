@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Env files
+.env
+.env.*
+!.env.example
+!server/.env.example
+
 # Runtime state (do not commit)
 data/state.json
 

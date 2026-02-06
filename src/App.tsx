@@ -256,6 +256,7 @@ export default function App() {
 
   const [view, setView] = useState<'landing' | 'arena'>('landing')
   const [demoOn, setDemoOn] = useState(false)
+  const [demoAutoDisabled, setDemoAutoDisabled] = useState(false)
 
   const agentsById = useMemo(() => {
     const m = new Map<string, Agent>()
@@ -336,6 +337,13 @@ export default function App() {
     }
   }, [demoOn])
 
+  // Auto-enable demo when there is no live match (unless user explicitly disabled it).
+  useEffect(() => {
+    if (view !== 'arena') return
+    if (demoAutoDisabled) return
+    if (!currentMatch) setDemoOn(true)
+  }, [view, currentMatch, demoAutoDisabled])
+
   const activeMatch = demoOn ? demoMatch : currentMatch
   const agentCount = snap?.agents?.length ?? 0
 
@@ -356,6 +364,102 @@ export default function App() {
       winner: activeMatch.winnerId ? agentsById.get(activeMatch.winnerId)?.name ?? activeMatch.winnerId : null,
     }
   }, [agentsById, activeMatch])
+
+  type FighterViz = {
+    id: string
+    name: string
+    hp: number
+    x: number
+    flip?: boolean
+    state: 'idle' | 'attack' | 'hit' | 'dead'
+  }
+
+  const [viz, setViz] = useState<{ a: FighterViz; b: FighterViz } | null>(null)
+  useEffect(() => {
+    if (!fighters) {
+      setViz(null)
+      return
+    }
+
+    setViz({
+      a: { id: fighters.aId, name: fighters.a, hp: 100, x: 18, state: 'idle' },
+      b: { id: fighters.bId, name: fighters.b, hp: 100, x: 82, flip: true, state: 'idle' },
+    })
+  }, [fighters?.aId, fighters?.bId, fighters?.a, fighters?.b])
+
+  useEffect(() => {
+    if (!fighters || !activeMatch) return
+    const last = (activeMatch.events ?? []).slice(-1)[0]
+    if (!last) return
+
+    // crude event→animation mapping (for human fun)
+    setViz((prev) => {
+      if (!prev) return prev
+
+      const a = { ...prev.a }
+      const b = { ...prev.b }
+
+      function resetStates() {
+        a.state = a.hp <= 0 ? 'dead' : 'idle'
+        b.state = b.hp <= 0 ? 'dead' : 'idle'
+      }
+
+      if (last.type === 'clash') {
+        // alternate who attacks
+        const attackerIsA = Math.random() < 0.5
+        if (attackerIsA) {
+          a.state = 'attack'
+          b.state = 'hit'
+          b.hp = Math.max(0, b.hp - 18)
+        } else {
+          b.state = 'attack'
+          a.state = 'hit'
+          a.hp = Math.max(0, a.hp - 18)
+        }
+      }
+
+      if (last.type === 'result') {
+        const w = activeMatch.winnerId
+        if (w === a.id) {
+          a.state = 'attack'
+          b.state = 'hit'
+          b.hp = Math.max(0, Math.min(b.hp, 10))
+        } else if (w === b.id) {
+          b.state = 'attack'
+          a.state = 'hit'
+          a.hp = Math.max(0, Math.min(a.hp, 10))
+        }
+      }
+
+      if (last.type === 'death') {
+        const w = activeMatch.winnerId
+        if (w === a.id) {
+          b.hp = 0
+          b.state = 'dead'
+          a.state = 'idle'
+        } else if (w === b.id) {
+          a.hp = 0
+          a.state = 'dead'
+          b.state = 'idle'
+        }
+      }
+
+      // decay back to idle
+      window.setTimeout(() => {
+        setViz((cur) => {
+          if (!cur) return cur
+          const na = { ...cur.a }
+          const nb = { ...cur.b }
+          na.state = na.hp <= 0 ? 'dead' : 'idle'
+          nb.state = nb.hp <= 0 ? 'dead' : 'idle'
+          return { a: na, b: nb }
+        })
+      }, 520)
+
+      resetStates()
+      return { a, b }
+    })
+  }, [activeMatch?.events?.length, fighters?.aId, fighters?.bId])
 
   const timeline = activeMatch?.events?.slice(-14) ?? []
 
@@ -665,6 +769,7 @@ export default function App() {
                 <button
                   className={demoOn ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
                   onClick={() => {
+                    setDemoAutoDisabled(true)
                     setDemoOn((v) => !v)
                     window.setTimeout(() => {
                       document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -767,6 +872,38 @@ export default function App() {
                 </div>
 
                 <div className="hudGrid">
+                  <div className="panel">
+                    <div className="panelTitle">Arena</div>
+                    <div className="panelBody">
+                      {viz ? (
+                        <div className="arena2d" aria-label="2D battle arena">
+                          <div className="arenaStage" />
+                          <div className="arenaHud">
+                            <div className="hpBox hpA">
+                              <div className="hpName">{viz.a.name}</div>
+                              <div className="hpBar"><div className="hpFill" style={{ width: `${viz.a.hp}%` }} /></div>
+                            </div>
+                            <div className="hpBox hpB">
+                              <div className="hpName">{viz.b.name}</div>
+                              <div className="hpBar"><div className="hpFill" style={{ width: `${viz.b.hp}%` }} /></div>
+                            </div>
+                          </div>
+
+                          <div className={`fighterSprite spriteA state-${viz.a.state}`} style={{ left: `${viz.a.x}%` }}>
+                            <div className="spriteBody" />
+                            <div className="spriteShadow" />
+                          </div>
+                          <div className={`fighterSprite spriteB state-${viz.b.state}`} style={{ left: `${viz.b.x}%` }}>
+                            <div className="spriteBody" />
+                            <div className="spriteShadow" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="hint">Start the demo to see a mocked 2D battle.</div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="panel">
                     <div className="panelTitle">Challenge</div>
                     <div className="panelBody">

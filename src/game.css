@@ -146,6 +146,128 @@
   font-size: 0.82rem;
 }
 
+/* --- 2D Arena (mock) --- */
+.arena2d {
+  position: relative;
+  height: 220px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background:
+    radial-gradient(700px 220px at 50% 0%, rgba(34, 211, 238, 0.10), transparent 60%),
+    radial-gradient(520px 260px at 90% 0%, rgba(251, 113, 133, 0.10), transparent 62%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.30), rgba(2, 6, 23, 0.08));
+}
+
+:root[data-theme="light"] .arena2d {
+  background:
+    radial-gradient(700px 220px at 50% 0%, rgba(34, 211, 238, 0.10), transparent 60%),
+    radial-gradient(520px 260px at 90% 0%, rgba(251, 113, 133, 0.08), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.65));
+}
+
+.arenaStage {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -40px;
+  height: 120px;
+  background:
+    radial-gradient(closest-side at 50% 20%, rgba(251, 191, 36, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(148, 163, 184, 0.04), rgba(148, 163, 184, 0.10));
+  transform: skewX(-8deg);
+}
+
+.arenaHud {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 2;
+}
+
+.hpBox {
+  width: 46%;
+  border-radius: 12px;
+  padding: 8px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(2, 6, 23, 0.16);
+}
+
+:root[data-theme="light"] .hpBox { background: rgba(255, 255, 255, 0.70); }
+
+.hpName {
+  font-weight: 950;
+  font-size: 0.82rem;
+  color: rgba(248, 250, 252, 0.86);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+:root[data-theme="light"] .hpName { color: rgba(15, 23, 42, 0.90); }
+
+.hpBar {
+  margin-top: 6px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.18);
+  overflow: hidden;
+}
+
+.hpFill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.92), rgba(167, 139, 250, 0.78), rgba(251, 113, 133, 0.72));
+}
+
+.fighterSprite {
+  position: absolute;
+  bottom: 38px;
+  width: 44px;
+  height: 44px;
+  z-index: 3;
+  transform: translateX(-50%);
+  transition: transform 140ms ease, filter 140ms ease;
+}
+
+.spriteBody {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.24);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.spriteShadow {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.25);
+  filter: blur(2px);
+}
+
+.spriteA .spriteBody {
+  background: radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.35), rgba(2, 6, 23, 0.20) 70%);
+}
+
+.spriteB .spriteBody {
+  background: radial-gradient(circle at 30% 30%, rgba(251, 113, 133, 0.30), rgba(2, 6, 23, 0.20) 70%);
+}
+
+.state-attack { transform: translateX(-50%) translateY(-2px) scale(1.04); }
+.state-hit { filter: drop-shadow(0 0 10px rgba(251, 113, 133, 0.20)); }
+.state-dead { opacity: 0.28; filter: grayscale(1); }
+
 @media (min-width: 720px) {
   .fightNameA, .fightNameB { font-size: 1.18rem; }
   .victoryName { font-size: 1.14rem; }

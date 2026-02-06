@@ -235,6 +235,34 @@ html, body, #root {
 /* Very small screens: hide the subtitle to avoid ugly truncation */
 @media (max-width: 420px) {
   .arenaMarkSub { display: none; }
+
+  .arenaTopRight { gap: 8px; }
+  .topNav { gap: 6px; }
+
+  .topNavBtn {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+  }
+
+  .topNavBtn .btnIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .topNavBtn .btnIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .topStatus {
+    padding: 6px 8px;
+    font-size: 0.66rem;
+  }
+
+  .topDot {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 .arenaTopRight {

@@ -51,16 +51,13 @@ type Snapshot = {
 type WsStatus = 'connecting' | 'open' | 'closed'
 
 function apiBase() {
-  // Default: same host, API runs on :5195 when web is on :5194 (local docker).
-  // In production behind a reverse proxy, set VITE_API_BASE to "" or the public API base.
+  // Default: same-origin API.
+  // Local dev docker: web on :5194 and api on :5195.
   const v = (import.meta as any)?.env?.VITE_API_BASE
   if (typeof v === 'string') return v
 
   const u = new URL(window.location.href)
-  // Local docker: web on 5194, api on 5195
   if (u.port === '5194') return `${u.protocol}//${u.hostname}:5195`
-  // If you're hitting the web UI via default ports (80/443) but API is still on 5195
-  if (!u.port || u.port === '80' || u.port === '443') return `${u.protocol}//${u.hostname}:5195`
   return ''
 }
 

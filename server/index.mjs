@@ -125,6 +125,13 @@ app.use(express.json({ limit: '256kb' }))
 // Serve skill files (moltbook-style)
 app.use(express.static(new URL('./public/', import.meta.url).pathname))
 
+// Serve the built web UI when running single-service.
+// In Dockerfile.single we copy Vite output to /app/dist.
+const DIST_DIR = process.env.DIST_DIR || path.join(process.cwd(), 'dist')
+if (fs.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR))
+}
+
 // ---- security defaults ----
 const JWT_SECRET = (process.env.ARENA_JWT_SECRET || process.env.JWT_SECRET || '').trim()
 const jwtRequired = (req, res, next) => {
@@ -201,6 +208,20 @@ if (X402_ENABLED) {
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 app.get('/api/state', (_req, res) => res.json(snapshot()))
+
+// SPA fallback (web UI)
+app.get('/', (_req, res) => {
+  const p = path.join(DIST_DIR, 'index.html')
+  if (fs.existsSync(p)) return res.sendFile(p)
+  return res.status(404).send('missing dist/index.html')
+})
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/') || req.path === '/health' || req.path === '/ws') return next()
+  const p = path.join(DIST_DIR, 'index.html')
+  if (fs.existsSync(p)) return res.sendFile(p)
+  return next()
+})
 
 // --- v1 API (stable-ish) ---
 app.post('/api/v1/auth/register', authLimiter, (req, res) => {

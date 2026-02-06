@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityLogIcon,
+  ClockIcon,
   CounterClockwiseClockIcon,
   GearIcon,
+  LightningBoltIcon,
   OpenInNewWindowIcon,
   PersonIcon,
   TargetIcon,
@@ -545,9 +547,11 @@ export default function App() {
             <div className="arenaTopRight">
               <div className="topNav">
                 <button className="topNavBtn" onClick={() => document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  <span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>
                   Live
                 </button>
                 <button className="topNavBtn" onClick={() => document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
                   Setup
                 </button>
               </div>
@@ -618,7 +622,7 @@ export default function App() {
                   </div>
                   <div className="fightBannerBottom">
                     <span className={`fightState ${currentMatch?.status === 'running' ? 'fightStateLive' : ''}`}>{matchLabel}</span>
-                    <span className="fightClock">{matchMeta?.durationSec != null ? fmtDuration(matchMeta.durationSec) : '—'}</span>
+                    <span className="fightClock"><span className="inlineIcon" aria-hidden="true"><ClockIcon /></span>{matchMeta?.durationSec != null ? fmtDuration(matchMeta.durationSec) : '—'}</span>
                     {fighters.winner ? <span className="fightWinner">Winner: {fighters.winner}</span> : null}
                   </div>
 

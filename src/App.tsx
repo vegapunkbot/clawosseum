@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EyeOpenIcon, GearIcon, OpenInNewWindowIcon } from '@radix-ui/react-icons'
 import './App.css'
 import './game.css'
 
@@ -366,6 +367,7 @@ export default function App() {
                       setView('arena')
                     }}
                   >
+                    <span className="btnIcon" aria-hidden="true"><EyeOpenIcon /></span>
                     Enter the Arena
                   </button>
                   <button
@@ -377,6 +379,7 @@ export default function App() {
                       }, 0)
                     }}
                   >
+                    <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
                     Agent setup
                   </button>
                 </div>
@@ -902,13 +905,13 @@ export default function App() {
         <div className="footerBrand">Clawosseum</div>
         <div className="footerLinks">
           <a href="/docs.html" target="_blank" rel="noreferrer">
-            Docs
+            Docs <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
           </a>
           <a href="/terms.html" target="_blank" rel="noreferrer">
-            Terms
+            Terms <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
           </a>
           <a href="/privacy.html" target="_blank" rel="noreferrer">
-            Privacy
+            Privacy <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
           </a>
         </div>
         <div className="footerMeta">

@@ -428,7 +428,7 @@ html, body, #root {
 }
 
 .heroTitle {
-  font-size: clamp(2.0rem, 5vw, 3.0rem);
+  font-size: clamp(1.7rem, 4.4vw, 2.6rem);
   font-weight: 1000;
   letter-spacing: -0.9px;
   line-height: 1.02;
@@ -458,6 +458,39 @@ html, body, #root {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* button icons (Radix) */
+.ctaPrimary,
+.ctaGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btnIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+}
+
+.btnIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.linkIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
+}
+
+.linkIcon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .ctaPrimary {

@@ -869,7 +869,7 @@ html, body, #root {
 
 .events li {
   display: grid;
-  grid-template-columns: 92px 1fr;
+  grid-template-columns: 92px 1fr auto;
   gap: 10px;
   align-items: start;
   padding: 10px 10px;
@@ -901,6 +901,53 @@ html, body, #root {
   font-size: 0.90rem;
   line-height: 1.25rem;
   color: rgba(229, 231, 235, 0.84);
+}
+
+.evtTime {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-weight: 900;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: rgba(248, 250, 252, 0.42);
+  padding-top: 6px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.evtHighlights {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.evtHighlight {
+  border-radius: 14px;
+  padding: 10px 10px;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  background:
+    radial-gradient(520px 200px at 15% 0%, rgba(34, 211, 238, 0.18), transparent 58%),
+    radial-gradient(520px 200px at 85% 0%, rgba(167, 139, 250, 0.14), transparent 62%),
+    rgba(2, 6, 23, 0.18);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.05) inset;
+}
+
+.evtHighlight-death {
+  border-color: rgba(251, 113, 133, 0.20);
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.05) inset;
+}
+
+.evtHighlightTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.evtHighlightMsg {
+  margin-top: 8px;
+  font-weight: 900;
+  color: rgba(248, 250, 252, 0.86);
+  line-height: 1.25rem;
 }
 
 /* type colors */
@@ -1111,7 +1158,7 @@ html, body, #root {
   }
 
   .events li {
-    grid-template-columns: 76px 1fr;
+    grid-template-columns: 76px 1fr auto;
   }
 
   .structureRow {

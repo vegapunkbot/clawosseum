@@ -79,6 +79,16 @@ function fmtDuration(sec: number | null) {
   return `${mm}m ${String(ss).padStart(2, '0')}s`
 }
 
+function fmtAgeShort(from: Date | null, to: Date | null) {
+  if (!from || !to) return '—'
+  const s = Math.max(0, Math.round((to.getTime() - from.getTime()) / 1000))
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  return `${h}h`
+}
+
 async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text)
@@ -246,9 +256,26 @@ export default function App() {
   }, [agentsById, currentMatch])
 
   const timeline = currentMatch?.events?.slice(-14) ?? []
+
+  const eventHighlights = useMemo(() => {
+    const items = [...(currentMatch?.events ?? [])]
+      .reverse()
+      .filter((e) => e && (e.type === 'result' || e.type === 'death'))
+      .slice(0, 2)
+      .reverse()
+
+    return items.map((e) => {
+      const t = safeDate(e.t)
+      return {
+        type: e.type,
+        message: e.message,
+        at: t,
+      }
+    })
+  }, [currentMatch?.events])
   const recent = snap?.recentMatches ?? []
 
-  const nowForDuration = useMemo(() => {
+  const serverNow = useMemo(() => {
     const d = safeDate(snap?.serverTime)
     return d ?? new Date()
   }, [snap?.serverTime])
@@ -257,7 +284,7 @@ export default function App() {
     if (!currentMatch) return null
     const startedAt = safeDate(currentMatch.startedAt)
     const endedAt = safeDate(currentMatch.endedAt)
-    const endRef = endedAt ?? nowForDuration
+    const endRef = endedAt ?? serverNow
     const durationSec = startedAt ? Math.max(0, Math.round((endRef.getTime() - startedAt.getTime()) / 1000)) : null
 
     return {
@@ -267,7 +294,7 @@ export default function App() {
       endedAt,
       durationSec,
     }
-  }, [currentMatch, nowForDuration])
+  }, [currentMatch, serverNow])
 
   const stats = useMemo(() => {
     const seasonWins = snap?.season?.wins ?? {}
@@ -709,18 +736,38 @@ export default function App() {
                           <div className="emptySub">When a match starts, events stream here over /ws.</div>
                         </div>
                       ) : (
-                        <ul className="events" aria-label="Combat log">
-                          {timeline.map((e, idx) => (
-                            <li
-                              key={idx}
-                              className={`evtRow evt-${String(e.type || 'event').toLowerCase()}`}
-                              style={{ animationDelay: `${Math.min(420, idx * 35)}ms` }}
-                            >
-                              <span className={`evtType evtType-${String(e.type || 'event').toLowerCase()}`}>{e.type}</span>
-                              <span className="evtMsg">{e.message}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <>
+                          {eventHighlights.length > 0 ? (
+                            <div className="evtHighlights" aria-label="Highlights">
+                              {eventHighlights.map((h, i) => (
+                                <div key={`${h.type}-${i}`} className={`evtHighlight evtHighlight-${h.type}`}>
+                                  <div className="evtHighlightTop">
+                                    <span className={`evtType evtType-${h.type}`}>{h.type}</span>
+                                    <span className="evtTime">{fmtAgeShort(h.at, serverNow)}</span>
+                                  </div>
+                                  <div className="evtHighlightMsg">{h.message}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          <ul className="events" aria-label="Combat log">
+                            {timeline.map((e, idx) => {
+                              const at = safeDate(e.t)
+                              return (
+                                <li
+                                  key={idx}
+                                  className={`evtRow evt-${String(e.type || 'event').toLowerCase()}`}
+                                  style={{ animationDelay: `${Math.min(420, idx * 35)}ms` }}
+                                >
+                                  <span className={`evtType evtType-${String(e.type || 'event').toLowerCase()}`}>{e.type}</span>
+                                  <span className="evtMsg">{e.message}</span>
+                                  <span className="evtTime">{fmtAgeShort(at, serverNow)}</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </>
                       )}
                     </div>
                   </div>

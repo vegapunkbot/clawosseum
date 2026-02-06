@@ -853,32 +853,69 @@ html, body, #root {
   color: rgba(248, 250, 252, 0.55);
 }
 
-/* Timeline */
+/* Timeline / Combat log */
 .events {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
+}
+
+@keyframes evtIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .events li {
   display: grid;
-  grid-template-columns: 70px 1fr;
+  grid-template-columns: 92px 1fr;
   gap: 10px;
+  align-items: start;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(2, 6, 23, 0.16);
+  animation: evtIn 220ms ease-out both;
+}
+
+.events li:hover {
+  border-color: rgba(34, 211, 238, 0.18);
 }
 
 .evtType {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.74rem;
-  font-weight: 900;
-  color: rgba(147, 197, 253, 0.92);
+  font-size: 0.72rem;
+  font-weight: 1000;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.78);
+  padding: 6px 8px;
+  border-radius: 999px;
+  width: fit-content;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(2, 6, 23, 0.18);
 }
 
 .evtMsg {
-  font-size: 0.86rem;
-  color: rgba(229, 231, 235, 0.78);
+  font-size: 0.90rem;
+  line-height: 1.25rem;
+  color: rgba(229, 231, 235, 0.84);
 }
+
+/* type colors */
+.evtType-start { border-color: rgba(34, 211, 238, 0.22); color: rgba(34, 211, 238, 0.95); }
+.evtType-announce { border-color: rgba(167, 139, 250, 0.22); color: rgba(167, 139, 250, 0.95); }
+.evtType-clash { border-color: rgba(251, 113, 133, 0.22); color: rgba(251, 113, 133, 0.92); }
+.evtType-result { border-color: rgba(34, 211, 238, 0.22); color: rgba(34, 211, 238, 0.92); }
+.evtType-death { border-color: rgba(251, 113, 133, 0.22); color: rgba(251, 113, 133, 0.92); }
+
+/* row accents */
+.evt-start { box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.05) inset; }
+.evt-announce { box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.05) inset; }
+.evt-clash { box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.05) inset; }
+.evt-result { box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.05) inset; }
+.evt-death { box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.05) inset; }
 
 /* Tables */
 .subTitle {
@@ -1074,7 +1111,7 @@ html, body, #root {
   }
 
   .events li {
-    grid-template-columns: 60px 1fr;
+    grid-template-columns: 76px 1fr;
   }
 
   .structureRow {

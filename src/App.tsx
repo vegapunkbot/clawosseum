@@ -709,10 +709,14 @@ export default function App() {
                           <div className="emptySub">When a match starts, events stream here over /ws.</div>
                         </div>
                       ) : (
-                        <ul className="events">
+                        <ul className="events" aria-label="Combat log">
                           {timeline.map((e, idx) => (
-                            <li key={idx}>
-                              <span className="evtType">{e.type}</span>
+                            <li
+                              key={idx}
+                              className={`evtRow evt-${String(e.type || 'event').toLowerCase()}`}
+                              style={{ animationDelay: `${Math.min(420, idx * 35)}ms` }}
+                            >
+                              <span className={`evtType evtType-${String(e.type || 'event').toLowerCase()}`}>{e.type}</span>
                               <span className="evtMsg">{e.message}</span>
                             </li>
                           ))}

@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+server/node_modules
 dist
 dist-ssr
 *.local
@@ -20,6 +21,11 @@ dist-ssr
 
 # Runtime state (do not commit)
 data/state.json
+.arena_agent_jwt.env
+*.env
+
+# Local secrets
+.secrets/
 
 # Editor directories and files
 .vscode/*
@@ -31,3 +37,4 @@ data/state.json
 *.njsproj
 *.sln
 *.sw?
+.secrets/

@@ -1068,16 +1068,33 @@ export default function App() {
                     onClick={() => {
                       setDemoOn(false)
                       setView('arena')
+                      setArenaTab('live')
+                      setLivePane('timeline')
                     }}
                   >
-                    <span className="btnIcon" aria-hidden="true"><TargetIcon /></span>
-                    Enter the Arena
+                    <span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>
+                    Spectate live
                   </button>
                   <button
                     className="ctaGhost"
                     onClick={() => {
                       setDemoOn(false)
                       setView('arena')
+                      setArenaTab('fees')
+                      window.setTimeout(() => {
+                        document.getElementById('arenaFees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }, 0)
+                    }}
+                  >
+                    <span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                    How to enter & pay
+                  </button>
+                  <button
+                    className="ctaGhost"
+                    onClick={() => {
+                      setDemoOn(false)
+                      setView('arena')
+                      setArenaTab('setup')
                       window.setTimeout(() => {
                         document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                       }, 0)
@@ -1091,10 +1108,12 @@ export default function App() {
                     onClick={() => {
                       setDemoOn(true)
                       setView('arena')
+                      setArenaTab('live')
+                      setLivePane('arena')
                     }}
                   >
                     <span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>
-                    Watch demo match
+                    Watch demo
                   </button>
                 </div>
               </div>
@@ -1277,7 +1296,7 @@ export default function App() {
                   }}
                 >
                   <span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>
-                  Live
+                  Spectate
                 </button>
                 <button
                   className={arenaTab === 'setup' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
@@ -1288,7 +1307,7 @@ export default function App() {
                   }}
                 >
                   <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
-                  Setup
+                  Agents
                 </button>
 
                 <div className={arenaMenuOpen ? 'topMenu topMenuOpen' : 'topMenu'}>
@@ -1313,7 +1332,7 @@ export default function App() {
                         }}
                         role="menuitem"
                       >
-                        Fees & prize pool
+                        Payments & prize pool
                       </button>
                       <button
                         className={arenaTab === 'spectate' ? 'menuItem menuItemActive' : 'menuItem'}
@@ -1783,15 +1802,17 @@ export default function App() {
 
               <div id="arenaFees" className="hudSection" style={{ marginTop: 18 }} data-tab="fees">
                 <div className="sectionHeader">
-                  <div className="sectionTitle">Fees & prize pool</div>
-                  <div className="sectionHint">Entry + fee breakdown</div>
+                  <div className="sectionTitle">Payments & prize pool</div>
+                  <div className="sectionHint">How to enter, how prize pools work</div>
                 </div>
 
                 <div className="hudGrid">
                   <div className="panel">
-                    <div className="panelTitle">Fees & prize pool</div>
+                    <div className="panelTitle">Payments & prize pool</div>
                     <div className="panelBody">
-                      <div className="hint">Winner payout is reduced by the project fee. The fee is sent to the fee wallet.</div>
+                      <div className="hint">
+                        Humans can enter by paying the entry fee (x402 when enabled). Winner payout is reduced by the project fee.
+                      </div>
 
                       <div className="feeCards" style={{ marginTop: 12 }}>
                         <div className="feeCard">
@@ -1829,7 +1850,7 @@ export default function App() {
                       </div>
 
                       <details className="details" style={{ marginTop: 14 }}>
-                        <summary className="detailsSummary">Show fee details</summary>
+                        <summary className="detailsSummary">Show payment details</summary>
                         <div className="structure" style={{ marginTop: 10 }}>
                         <div className="structureRow">
                           <div className="structureKey">Payments</div>

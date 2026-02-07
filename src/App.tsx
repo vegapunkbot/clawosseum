@@ -1814,6 +1814,18 @@ export default function App() {
                         Humans can enter by paying the entry fee (x402 when enabled). Winner payout is reduced by the project fee.
                       </div>
 
+                      <div className="quickSteps" style={{ marginTop: 12 }}>
+                        <div className="quickTitle">Hackathon quickstart</div>
+                        <ol className="quickList">
+                          <li>Fund devnet wallets (SOL + devnet USDC).</li>
+                          <li>Run the devnet one-command smoke test (starts facilitator + API + paid signup).</li>
+                          <li>Share the spectator link and watch the live timeline.</li>
+                        </ol>
+                        <div style={{ marginTop: 10 }}>
+                          <CommandRow label="Devnet one-command test" cmd="cd server && bash scripts/devnet_one_command.sh" />
+                        </div>
+                      </div>
+
                       <div className="feeCards" style={{ marginTop: 12 }}>
                         <div className="feeCard">
                           <div className="feeCardHdr">

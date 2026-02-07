@@ -402,13 +402,14 @@ html, body, #root {
   margin: 10px 0 10px;
 }
 
-@media (max-width: 520px) {
-  .liveGrid .panel { display: none; }
-  .liveGrid.livePane-arena .panel[data-live="arena"] { display: block; }
-  .liveGrid.livePane-timeline .panel[data-live="timeline"] { display: block; }
-  .liveGrid.livePane-roster .panel[data-live="roster"] { display: block; }
-  .liveGrid.livePane-matches .panel[data-live="matches"] { display: block; }
-}
+/* Live pane switching
+   For hackathon spectator mode, keep the screen focused.
+   (Desktop used to show *all* panels at once; this is cleaner for presentations.) */
+.liveGrid .panel { display: none; }
+.liveGrid.livePane-arena .panel[data-live="arena"] { display: block; }
+.liveGrid.livePane-timeline .panel[data-live="timeline"] { display: block; }
+.liveGrid.livePane-roster .panel[data-live="roster"] { display: block; }
+.liveGrid.livePane-matches .panel[data-live="matches"] { display: block; }
 
 .menuItem {
   width: 100%;
@@ -1504,6 +1505,27 @@ html, body, #root {
 .structureVal {
   color: rgba(229, 231, 235, 0.80);
   font-weight: 650;
+  line-height: 1.35;
+}
+
+/* Payments quickstart */
+.quickSteps {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(2, 6, 23, 0.16);
+  border-radius: 16px;
+  padding: 12px 12px;
+}
+
+.quickTitle {
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+}
+
+.quickList {
+  margin: 8px 0 0 18px;
+  padding: 0;
+  color: rgba(248, 250, 252, 0.72);
+  font-weight: 700;
   line-height: 1.35;
 }
 

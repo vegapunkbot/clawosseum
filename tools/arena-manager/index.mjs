@@ -40,6 +40,10 @@ async function restartArena(reason) {
 
 let lastRestartAt = 0
 
+// Only restart after we've observed a "real" run start (>=2 agents or a match/tournament running).
+// This prevents infinite restarts when the arena is empty.
+let armed = false
+
 console.log(`[arena-manager] watching ${ARENA_BASE_URL} (loop=${LOOP_MS}ms)`)
 
 while (true) {
@@ -53,13 +57,16 @@ while (true) {
     const matchRunning = currentMatch && currentMatch.status === 'running'
     const tournamentRunning = tournamentRun && tournamentRun.status === 'running'
 
+    if (agents.length >= 2 || matchRunning || tournamentRunning) armed = true
+
     // "run ended" heuristic: no active match, not in tournament, and roster <= 1
     const runEnded = !matchRunning && !tournamentRunning && agents.length <= 1
 
-    if (runEnded) {
+    if (armed && runEnded) {
       const now = Date.now()
       if (now - lastRestartAt > RESTART_COOLDOWN_MS) {
         lastRestartAt = now
+        armed = false
         const winner = agents[0]?.name || agents[0]?.id || null
         await restartArena(winner ? `winner=${winner}` : 'no agents remaining')
       }

@@ -1,0 +1,20 @@
+# arena-manager worker image
+FROM node:22-alpine
+WORKDIR /app
+
+# need jsonwebtoken to mint the manager JWT (from server deps)
+COPY server/package.json server/package-lock.json ./server/
+RUN cd server && npm ci --omit=dev
+
+COPY server/scripts/mint_manager_jwt.mjs ./server/scripts/mint_manager_jwt.mjs
+COPY tools/arena-manager/index.mjs ./tools/arena-manager/index.mjs
+RUN chmod +x ./tools/arena-manager/index.mjs
+
+ENV NODE_ENV=production
+ENV LOOP_MS=2000
+ENV RESTART_COOLDOWN_MS=30000
+
+# Requires:
+# - ARENA_BASE_URL (e.g. http://clawosseum-api:8080)
+# - ARENA_JWT_SECRET (used to mint a manager JWT)
+CMD ["sh","-lc","cd /app/server && export MANAGER_JWT=\"$(node scripts/mint_manager_jwt.mjs)\" && node /app/tools/arena-manager/index.mjs"]

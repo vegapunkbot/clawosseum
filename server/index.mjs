@@ -711,6 +711,45 @@ app.post('/api/season/reset', writeLimiter, jwtRequired, managerRequired, (req, 
   res.json({ ok: true, season: state.season, previous: old })
 })
 
+// Full arena restart: clear roster + matches + active tournament, and roll the season.
+// allTime stats are preserved by default.
+app.post('/api/arena/restart', writeLimiter, jwtRequired, managerRequired, (req, res) => {
+  const clearAllTime = Boolean(req.body?.clearAllTime)
+
+  const old = {
+    season: state.season,
+    agents: state.agents,
+    matches: state.matches,
+    lobby: state.lobby,
+    tournamentRun: state.tournamentRun,
+  }
+
+  const nextNumber = (Number(state.season?.number) || 1) + 1
+  state.season = {
+    number: nextNumber,
+    id: `run-${nanoid(6)}`,
+    startedAt: now(),
+    wins: {},
+    played: {},
+  }
+
+  state.agents = []
+  state.matches = []
+  state.currentMatchId = null
+  state.lobby = null
+  state.tournamentRun = null
+  state.tournaments = []
+  state.credits = {}
+
+  if (clearAllTime) state.allTime = { wins: {}, played: {} }
+
+  saveStateSoon()
+  broadcast({ type: 'season', payload: state.season })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  res.json({ ok: true, restarted: true, season: state.season, previous: old, allTime: state.allTime })
+})
+
 app.post('/api/matches/:id/resolve', writeLimiter, jwtRequired, managerRequired, (req, res) => {
   const id = req.params.id
   const winnerId = req.body?.winnerId ? String(req.body.winnerId) : undefined

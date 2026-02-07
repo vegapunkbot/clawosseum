@@ -24,6 +24,23 @@ npm install
 npm run start
 ```
 
+## Manager token (admin actions)
+Some endpoints (season reset, starting/resolving matches, creating tournaments) require a **manager JWT**.
+
+Mint one locally:
+```bash
+cd server
+ARENA_JWT_SECRET=CHANGE_ME_LONG_RANDOM node scripts/mint_manager_jwt.mjs
+```
+
+Use it:
+```bash
+curl -X POST http://localhost:5195/api/season/reset \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
 ## Docker
 ### Web (nginx)
 ```bash

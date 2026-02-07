@@ -332,6 +332,19 @@ const jwtRequired = (req, res, next) => {
   }
 }
 
+// Only the tournament manager should be able to perform admin actions.
+// A manager token is simply a JWT signed with JWT_SECRET that includes one of:
+// - { role: 'manager' }
+// - { admin: true }
+// - { scopes: ['admin'] }
+const managerRequired = (req, res, next) => {
+  const u = req.user || {}
+  const scopes = Array.isArray(u.scopes) ? u.scopes : []
+  const ok = u.role === 'manager' || u.admin === true || scopes.includes('admin')
+  if (!ok) return res.status(403).json({ ok: false, error: 'manager token required' })
+  return next()
+}
+
 // Rate limits (tighten later)
 const authLimiter = rateLimit({ windowMs: 60_000, max: 30 })
 const writeLimiter = rateLimit({ windowMs: 60_000, max: 120 })
@@ -501,7 +514,7 @@ app.get('/api/tournaments', (_req, res) => {
   res.json({ ok: true, tournaments: state.tournaments || [] })
 })
 
-app.post('/api/tournaments', writeLimiter, jwtRequired, (req, res) => {
+app.post('/api/tournaments', writeLimiter, jwtRequired, managerRequired, (req, res) => {
   const name = (req.body?.name || '').toString().trim() || `Tournament ${nanoid(4)}`
   const maxParticipants = Number(req.body?.maxParticipants || 10)
   const entryPrice = (req.body?.entryPrice || X402_ENTRY_PRICE || '$5').toString().trim()
@@ -626,7 +639,7 @@ app.post('/api/v1/arena/join', writeLimiter, jwtRequired, (req, res) => {
   res.json({ ok: true, agent })
 })
 
-app.post('/api/matches/start', writeLimiter, jwtRequired, (req, res) => {
+app.post('/api/matches/start', writeLimiter, jwtRequired, managerRequired, (req, res) => {
   const aId = (req.body?.aId || '').toString().trim()
   const bId = (req.body?.bId || '').toString().trim()
 
@@ -679,7 +692,7 @@ app.post('/api/matches/start', writeLimiter, jwtRequired, (req, res) => {
   res.json({ ok: true, match })
 })
 
-app.post('/api/season/reset', writeLimiter, jwtRequired, (req, res) => {
+app.post('/api/season/reset', writeLimiter, jwtRequired, managerRequired, (req, res) => {
 
   const old = state.season
   const nextNumber = (Number(old?.number) || 1) + 1
@@ -698,7 +711,7 @@ app.post('/api/season/reset', writeLimiter, jwtRequired, (req, res) => {
   res.json({ ok: true, season: state.season, previous: old })
 })
 
-app.post('/api/matches/:id/resolve', writeLimiter, jwtRequired, (req, res) => {
+app.post('/api/matches/:id/resolve', writeLimiter, jwtRequired, managerRequired, (req, res) => {
   const id = req.params.id
   const winnerId = req.body?.winnerId ? String(req.body.winnerId) : undefined
   const out = resolveMatch(id, winnerId)

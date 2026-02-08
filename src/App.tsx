@@ -10,9 +10,14 @@ import {
   PersonIcon,
   SunIcon,
   TargetIcon,
+  LockClosedIcon,
+  InfoCircledIcon,
+  IdCardIcon,
+  Link2Icon,
 } from '@radix-ui/react-icons'
 import './App.css'
 import './game.css'
+import './tokenomics.css'
 
 type Agent = { id: string; name: string; llm?: string; createdAt: string }
 type MatchEvent = { t: string; type: string; message: string }
@@ -64,11 +69,24 @@ type TokenMarket = {
   address: string
   symbol: string
   name: string
+
   priceUsd: number | null
   marketCapUsd: number | null
+  fdvUsd: number | null
+  liquidityUsd: number | null
+  volume24hUsd: number | null
+  buys24h: number | null
+  sells24h: number | null
+
   change12h: number | null
   change24h: number | null
+
+  chainId: string | null
+  dexId: string | null
+  pairAddress: string | null
+  pairCreatedAt: number | null
   dexUrl?: string | null
+
   updatedAt: Date
 }
 
@@ -238,12 +256,20 @@ function useTokenMarket(address: string, nameOverride?: string | null) {
         const name = (nameOverride || best?.baseToken?.name || symbol).toString()
 
         const priceUsd = best?.priceUsd != null ? Number(best.priceUsd) : null
-        const marketCapUsd = best?.marketCap != null
-          ? Number(best.marketCap)
-          : (best?.fdv != null ? Number(best.fdv) : null)
+        const marketCapUsd = best?.marketCap != null ? Number(best.marketCap) : null
+        const fdvUsd = best?.fdv != null ? Number(best.fdv) : null
+        const liquidityUsd = best?.liquidity?.usd != null ? Number(best.liquidity.usd) : null
+        const volume24hUsd = best?.volume?.h24 != null ? Number(best.volume.h24) : null
+        const buys24h = best?.txns?.h24?.buys != null ? Number(best.txns.h24.buys) : null
+        const sells24h = best?.txns?.h24?.sells != null ? Number(best.txns.h24.sells) : null
 
         const change12h = best?.priceChange?.h12 != null ? Number(best.priceChange.h12) : null
         const change24h = best?.priceChange?.h24 != null ? Number(best.priceChange.h24) : null
+
+        const chainId = best?.chainId != null ? String(best.chainId) : null
+        const dexId = best?.dexId != null ? String(best.dexId) : null
+        const pairAddress = best?.pairAddress != null ? String(best.pairAddress) : null
+        const pairCreatedAt = best?.pairCreatedAt != null ? Number(best.pairCreatedAt) : null
         const dexUrl = best?.url ? String(best.url) : null
 
         if (!cancelled) {
@@ -251,11 +277,24 @@ function useTokenMarket(address: string, nameOverride?: string | null) {
             address,
             symbol,
             name,
+
             priceUsd: Number.isFinite(priceUsd as any) ? priceUsd : null,
             marketCapUsd: Number.isFinite(marketCapUsd as any) ? marketCapUsd : null,
+            fdvUsd: Number.isFinite(fdvUsd as any) ? fdvUsd : null,
+            liquidityUsd: Number.isFinite(liquidityUsd as any) ? liquidityUsd : null,
+            volume24hUsd: Number.isFinite(volume24hUsd as any) ? volume24hUsd : null,
+            buys24h: Number.isFinite(buys24h as any) ? buys24h : null,
+            sells24h: Number.isFinite(sells24h as any) ? sells24h : null,
+
             change12h: Number.isFinite(change12h as any) ? change12h : null,
             change24h: Number.isFinite(change24h as any) ? change24h : null,
+
+            chainId,
+            dexId,
+            pairAddress,
+            pairCreatedAt: Number.isFinite(pairCreatedAt as any) ? pairCreatedAt : null,
             dexUrl,
+
             updatedAt: new Date(),
           })
         }
@@ -526,7 +565,7 @@ export default function App() {
     }
   }, [theme])
 
-  const [view, setView] = useState<'landing' | 'arena'>('landing')
+  const [view, setView] = useState<'landing' | 'arena' | 'tokenomics'>('landing')
   const [demoOn, setDemoOn] = useState(false)
   const [demoAutoDisabled, setDemoAutoDisabled] = useState(false)
 
@@ -1431,6 +1470,162 @@ export default function App() {
         </div>
       ) : null}
 
+      {view === 'tokenomics' ? (
+        <div className="tokenPage">
+          <div className="arenaTopbar" aria-label="Tokenomics topbar">
+            <div className="arenaTopLeft">
+              <button className="topBtn" onClick={() => setView('landing')}>Home</button>
+              <button className="topBtn" onClick={() => setView('arena')}>Arena</button>
+              <div className="arenaMark">
+                <div className="arenaMarkTitle">
+                  <img
+                    className="brandLogo brandLogoTop"
+                    src="/logo-hero.png"
+                    alt=""
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                  {market?.symbol ? `$${market.symbol}` : `$${tokenName.toUpperCase()}`}
+                </div>
+                <div className="arenaMarkSub">Tokenomics</div>
+              </div>
+            </div>
+            <div className="arenaTopRight">
+              <div className="topNav">
+                {market?.dexUrl ? (
+                  <a className="topLink" href={market.dexUrl} target="_blank" rel="noreferrer">
+                    Chart <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                  </a>
+                ) : null}
+                <a className="topLink" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
+                  Explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="tokenWrap">
+            <div className="sectionHeader" style={{ marginTop: 18 }}>
+              <div className="sectionTitle">$CLAWOSSEUM</div>
+              <div className="sectionHint">Fair launch. Built for the arena.</div>
+            </div>
+
+            <div className="hudGrid" style={{ marginTop: 12 }}>
+              <div className="panel">
+                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>Market</div>
+                <div className="panelBody">
+                  <div className="metaGrid" style={{ marginTop: 8 }}>
+                    <div className="metaItem">
+                      <div className="metaKey">Price</div>
+                      <div className="metaVal">{fmtPriceUsd(market?.priceUsd ?? null)}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">Market cap</div>
+                      <div className="metaVal">{fmtMoneyUsd(market?.marketCapUsd ?? null)}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">FDV</div>
+                      <div className="metaVal">{fmtMoneyUsd(market?.fdvUsd ?? null)}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">Liquidity</div>
+                      <div className="metaVal">{fmtMoneyUsd(market?.liquidityUsd ?? null)}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">Volume (24h)</div>
+                      <div className="metaVal">{fmtMoneyUsd(market?.volume24hUsd ?? null)}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">Trades (24h)</div>
+                      <div className="metaVal">{market?.buys24h != null || market?.sells24h != null ? `${market?.buys24h ?? 0} buys · ${market?.sells24h ?? 0} sells` : '—'}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">Change (12h)</div>
+                      <div className="metaVal">{market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</div>
+                    </div>
+                    <div className="metaItem">
+                      <div className="metaKey">Change (24h)</div>
+                      <div className="metaVal">{market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="panel">
+                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><IdCardIcon /></span>Token details</div>
+                <div className="panelBody">
+                  <div className="structure" style={{ marginTop: 6 }}>
+                    <div className="structureRow">
+                      <div className="structureKey">Name</div>
+                      <div className="structureVal">{market?.name ?? 'Clawosseum'}</div>
+                    </div>
+                    <div className="structureRow">
+                      <div className="structureKey">Symbol</div>
+                      <div className="structureVal mono">${market?.symbol ?? tokenName.toUpperCase()}</div>
+                    </div>
+                    <div className="structureRow">
+                      <div className="structureKey">Mint</div>
+                      <div className="structureVal mono">{tokenAddress}</div>
+                    </div>
+                    {market?.pairAddress ? (
+                      <div className="structureRow">
+                        <div className="structureKey">Pair</div>
+                        <div className="structureVal mono">{market.pairAddress}</div>
+                      </div>
+                    ) : null}
+                    {market?.dexId ? (
+                      <div className="structureRow">
+                        <div className="structureKey">DEX</div>
+                        <div className="structureVal">{market.dexId}{market.chainId ? ` · ${market.chainId}` : ''}</div>
+                      </div>
+                    ) : null}
+                    {market?.pairCreatedAt ? (
+                      <div className="structureRow">
+                        <div className="structureKey">Created</div>
+                        <div className="structureVal">{new Date(market.pairCreatedAt).toLocaleString()}</div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="panel">
+                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><LockClosedIcon /></span>Tokenomics</div>
+                <div className="panelBody">
+                  <ul className="bulletList">
+                    <li><b>Fair launch.</b> No presale.</li>
+                    <li><b>4%</b> of supply will be bought and <b>locked</b>.</li>
+                    <li><b>4%</b> of supply will be bought for <b>rewards</b> and other ecosystem uses.</li>
+                    <li><b>Buyback:</b> 50% of fees earned will be used to buy <b>$CLAWOSSEUM</b>.</li>
+                    <li className="muted"><span className="inlineIcon" aria-hidden="true"><InfoCircledIcon /></span>Digital assets are risky and volatile. Not financial advice.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="panel">
+                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><Link2Icon /></span>Links</div>
+                <div className="panelBody">
+                  <div className="linkGrid">
+                    {market?.dexUrl ? (
+                      <a className="linkCard" href={market.dexUrl} target="_blank" rel="noreferrer">
+                        View chart <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                      </a>
+                    ) : null}
+                    <a className="linkCard" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
+                      Token explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                    </a>
+                    <a className="linkCard" href="/terms.html" target="_blank" rel="noreferrer">
+                      Terms <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {view === 'arena' ? (
         <>
           <div className="arenaBg" />
@@ -2165,6 +2360,9 @@ export default function App() {
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </span>
             <span className="srOnly">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+          <button className="footerNav" onClick={() => setView('tokenomics')}>
+            Tokenomics
           </button>
           <a href="/docs.html" target="_blank" rel="noreferrer">
             Docs <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>

@@ -25,7 +25,9 @@
     "express-rate-limit": "^8.2.1",
     "hono": "^4.11.8",
     "jsonwebtoken": "^9.0.3",
+    "mongodb": "^6.21.0",
     "nanoid": "^5.0.7",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "mongodb": "^6.13.0"
   }
 }

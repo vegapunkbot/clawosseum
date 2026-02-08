@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit'
 import jwt from 'jsonwebtoken'
 import { WebSocketServer } from 'ws'
 import { nanoid } from 'nanoid'
+import { MongoClient, ObjectId } from 'mongodb'
 
 // x402 (optional)
 // Coinbase x402 middleware is kept for some legacy endpoints.
@@ -27,9 +28,57 @@ const STATE_PATH = process.env.STATE_PATH || path.join(DATA_DIR, 'state.json')
 const FEE_WALLET = (process.env.FEE_WALLET || '').trim()
 const PROJECT_FEE_BPS = Number(process.env.PROJECT_FEE_BPS || 400) // 4%
 
+// MongoDB (optional)
+const MONGODB_URI = (process.env.MONGODB_URI || '').trim()
+const MONGODB_DB = (process.env.MONGODB_DB || 'clawosseum').trim()
+let mongoClient = null
+let mongoDb = null
+async function getMongo() {
+  if (!MONGODB_URI) return null
+  if (mongoDb) return mongoDb
+  mongoClient = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 2500 })
+  await mongoClient.connect()
+  mongoDb = mongoClient.db(MONGODB_DB)
+  return mongoDb
+}
+
+async function mongoGetProblemForMatch() {
+  const db = await getMongo().catch(() => null)
+  if (!db) return null
+  // pick a random active problem
+  const docs = await db
+    .collection('problems')
+    .aggregate([
+      { $match: { active: { $ne: false } } },
+      { $sample: { size: 1 } },
+    ])
+    .toArray()
+  return docs[0] || null
+}
+
+async function mongoSaveMatchResult(match) {
+  const db = await getMongo().catch(() => null)
+  if (!db) return
+
+  const doc = {
+    matchId: match.id,
+    status: match.status,
+    agentIds: match.agents,
+    winnerId: match.winnerId || null,
+    startedAt: match.startedAt || null,
+    endedAt: match.endedAt || null,
+    problemId: match.problemId || null,
+    problemPrompt: match.problemPrompt || null,
+    events: Array.isArray(match.events) ? match.events : [],
+    createdAt: new Date(),
+  }
+
+  await db.collection('match_results').insertOne(doc)
+}
+
 /** @typedef {{ id: string, name: string, createdAt: string }} Agent */
 /** @typedef {{ t: string, type: string, message: string }} MatchEvent */
-/** @typedef {{ id: string, status: 'idle'|'running'|'complete', agents: string[], winnerId?: string, startedAt?: string, endedAt?: string, events: MatchEvent[] }} Match */
+/** @typedef {{ id: string, status: 'idle'|'running'|'complete', agents: string[], winnerId?: string, startedAt?: string, endedAt?: string, problemId?: string|null, problemPrompt?: string|null, events: MatchEvent[] }} Match */
 
 function now() {
   return new Date().toISOString()
@@ -204,12 +253,32 @@ function createMatch(aId, bId, label) {
     status: 'running',
     agents: [a.id, b.id],
     startedAt: now(),
+    problemId: null,
+    problemPrompt: null,
     events: [
       { t: now(), type: 'announce', message: label },
       { t: now(), type: 'start', message: `Match started: ${a.name} vs ${b.name}` },
       { t: now(), type: 'announce', message: 'The gates open. The crowd roars.' },
     ],
   }
+
+  // Attach a problem (sourced from MongoDB when configured)
+  ;(async () => {
+    try {
+      const p = await mongoGetProblemForMatch()
+      if (!p) return
+      match.problemId = (p._id ? String(p._id) : null)
+      match.problemPrompt = (p.problem || p.prompt || '').toString() || null
+      if (match.problemPrompt) {
+        match.events.push({ t: now(), type: 'problem', message: `Problem: ${match.problemPrompt}` })
+        saveStateSoon()
+        broadcast({ type: 'match', payload: match })
+        broadcast({ type: 'state', payload: snapshot() })
+      }
+    } catch (e) {
+      // ignore mongo failures
+    }
+  })()
 
   state.matches.push(match)
   state.currentMatchId = match.id
@@ -819,6 +888,15 @@ function resolveMatch(matchId, forcedWinnerId) {
   broadcast({ type: 'match', payload: match })
   broadcast({ type: 'agents', payload: state.agents })
   broadcast({ type: 'state', payload: snapshot() })
+
+  // Persist match result (async; best-effort)
+  ;(async () => {
+    try {
+      await mongoSaveMatchResult(match)
+    } catch {
+      // ignore
+    }
+  })()
 
   // Start next match if tournament is running.
   if (state.tournamentRun?.status === 'running') {

@@ -383,6 +383,9 @@ html, body, #root {
 }
 
 .arenaMarkTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 1000;
   letter-spacing: 0.16em;
   font-size: 0.78rem;
@@ -846,10 +849,29 @@ html, body, #root {
 }
 
 .heroKicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 0.78rem;
   font-weight: 1000;
   letter-spacing: 0.22em;
   color: rgba(34, 211, 238, 0.75);
+}
+
+.brandName {
+  letter-spacing: inherit;
+}
+
+.betaTag {
+  letter-spacing: 0.08em;
+  font-weight: 1000;
+  font-size: 0.66rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  background: rgba(2, 6, 23, 0.55);
+  color: rgba(251, 113, 133, 0.95);
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.06) inset;
 }
 
 .heroSub {

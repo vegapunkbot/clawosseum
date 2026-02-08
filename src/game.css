@@ -651,7 +651,7 @@
   z-index: 0;
 
   /* Sky is not a tessellation: do NOT repeat */
-  background-image: url('/arena-sky.jpg');
+  background-image: url('/arena-sky.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;

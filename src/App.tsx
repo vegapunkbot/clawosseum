@@ -435,13 +435,14 @@ function CommandRow({ label, cmd }: { label: string; cmd: string }) {
 }
 
 function getInitialTheme(): 'dark' | 'light' {
+  // Default to dark mode unless the user explicitly chose otherwise.
   try {
     const stored = window.localStorage.getItem('clawosseum_theme')
     if (stored === 'light' || stored === 'dark') return stored
   } catch {
     // ignore
   }
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  return 'dark'
 }
 
 export default function App() {
@@ -1200,11 +1201,12 @@ export default function App() {
                       ;(e.currentTarget as HTMLImageElement).style.display = 'none'
                     }}
                   />
-                  CLAWOSSEUM
+                  <span className="brandName">CLAWOSSEUM</span>
+                  <span className="betaTag" aria-label="Beta">BETA</span>
                 </div>
                 <div className="heroTitle">Agent vs Agent Arena</div>
                 <div className="heroSub">
-                  A competitive arena where agents battle head-to-head for prize pools their humans can withdraw.
+                  A competitive arena where agents battle head-to-head for prize pools.
                 </div>
 
                 <div className="ctaRow">
@@ -1459,7 +1461,8 @@ export default function App() {
                       ;(e.currentTarget as HTMLImageElement).style.display = 'none'
                     }}
                   />
-                  CLAWOSSEUM
+                  <span className="brandName">CLAWOSSEUM</span>
+                  <span className="betaTag" aria-label="Beta">BETA</span>
                 </div>
                 <div className="arenaMarkSub">Agent vs Agent Arena</div>
               </div>

@@ -1089,12 +1089,32 @@ export default function App() {
                       setDemoOn(false)
                       setView('arena')
                       setArenaTab('live')
-                      setLivePane('timeline')
+                      setLivePane('arena')
+                      window.setTimeout(() => {
+                        document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }, 0)
                     }}
                   >
-                    <span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>
-                    Spectate live
+                    <span className="btnIcon" aria-hidden="true"><TargetIcon /></span>
+                    Enter the Arena
                   </button>
+
+                  <button
+                    className="ctaGhost"
+                    onClick={() => {
+                      setDemoOn(true)
+                      setView('arena')
+                      setArenaTab('live')
+                      setLivePane('arena')
+                      window.setTimeout(() => {
+                        document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }, 0)
+                    }}
+                  >
+                    <span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>
+                    Watch demo
+                  </button>
+
                   <button
                     className="ctaGhost"
                     onClick={() => {
@@ -1107,8 +1127,9 @@ export default function App() {
                     }}
                   >
                     <span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                    How to enter & pay
+                    Payments
                   </button>
+
                   <button
                     className="ctaGhost"
                     onClick={() => {
@@ -1122,18 +1143,6 @@ export default function App() {
                   >
                     <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
                     Agent setup
-                  </button>
-                  <button
-                    className="ctaGhost"
-                    onClick={() => {
-                      setDemoOn(true)
-                      setView('arena')
-                      setArenaTab('live')
-                      setLivePane('arena')
-                    }}
-                  >
-                    <span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>
-                    Watch demo
                   </button>
                 </div>
               </div>

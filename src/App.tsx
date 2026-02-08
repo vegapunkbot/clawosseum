@@ -3,6 +3,8 @@ import {
   ActivityLogIcon,
   ClockIcon,
   CounterClockwiseClockIcon,
+  EnterFullScreenIcon,
+  ExitFullScreenIcon,
   GearIcon,
   LightningBoltIcon,
   MoonIcon,
@@ -1235,13 +1237,16 @@ export default function App() {
   const wsStatusUi: WsStatus = demoOn ? 'open' : wsStatus
 
   return (
-    <div className={`page ${view === 'arena' ? 'pageArena' : ''} ${presentMode ? 'presentMode' : ''}`}> 
+    <div className={`page ${view === 'arena' ? 'pageArena' : ''} ${presentMode ? 'presentMode' : ''} ${duelFullscreen ? 'duelFullscreenOn' : ''}`}> 
       <main className="siteMain">
       {duelFullscreen ? (
         <div className="duelFullscreen" role="dialog" aria-label="Arena fullscreen">
           <div className="duelFullscreenTop">
             <div className="duelFullscreenTitle">Arena</div>
-            <button className="duelFullscreenClose" onClick={() => setDuelFullscreen(false)}>Close</button>
+            <button className="duelFullscreenClose" onClick={() => setDuelFullscreen(false)} title="Close full screen">
+              <span className="btnIcon" aria-hidden="true"><ExitFullScreenIcon /></span>
+              <span className="srOnly">Close</span>
+            </button>
           </div>
           <div className="duelFullscreenBody">
             {viz ? (
@@ -1960,7 +1965,10 @@ export default function App() {
                         <div className="panel">
                           <div className="panelTitleRow">
                             <div className="panelTitle">Arena</div>
-                            <button className="miniBtn" onClick={() => setDuelFullscreen(true)} title="Full screen">Full screen</button>
+                            <button className="miniBtn" onClick={() => setDuelFullscreen(true)} title="Full screen">
+                              <span className="btnIcon" aria-hidden="true"><EnterFullScreenIcon /></span>
+                              <span className="srOnly">Full screen</span>
+                            </button>
                           </div>
                           <div className="panelBody">
                             {viz ? (

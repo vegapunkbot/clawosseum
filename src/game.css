@@ -549,7 +549,7 @@
   height: 210px;
   transform: skewX(-8deg);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 
   /* Sky is not a tessellation: do NOT repeat */
   background-image: url('/arena-sky.jpg');
@@ -580,7 +580,7 @@
   right: -12%;
 
   /* Top wall: ~1/4 height of the other layers */
-  top: 122px;
+  top: 112px;
   height: 34px;
 
   transform: skewX(-8deg);
@@ -612,7 +612,7 @@
   right: -12%;
 
   /* walls sit directly above the floor */
-  top: 232px;
+  bottom: 94px;
   height: 74px;
 
   transform: skewX(-8deg);
@@ -622,7 +622,7 @@
   background-image: url('/arena-walls.jpg');
   background-repeat: repeat-x;
   background-size: auto 74px;
-  background-position: center top;
+  background-position: center bottom;
 
   opacity: 0.92;
   filter: saturate(0.95) contrast(1.05);
@@ -634,8 +634,8 @@
   left: -10%;
   right: -10%;
 
-  /* stands sit above the wall layer */
-  top: 154px;
+  /* sits directly above the wall layer */
+  top: 136px;
   height: 78px;
 
   transform: skewX(-8deg);

@@ -1876,6 +1876,7 @@ export default function App() {
                               <div className={`arena2d ${shakeOn ? 'shake' : ''}`} aria-label="2D battle arena">
                                 <div className="arenaSky" />
                                 <div className="arenaStands" />
+                                <div className="arenaWalls" />
                                 <div className="arenaStage" />
                                 <div className="arenaStageLip" />
                                 <div className="arenaHud">

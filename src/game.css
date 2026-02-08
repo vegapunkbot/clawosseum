@@ -564,22 +564,60 @@
 .arenaAnnounce {
   position: absolute;
   left: 50%;
-  top: 28px;
+  top: 22px;
   transform: translateX(-50%);
-  z-index: 7;
+  z-index: 20;
   padding: 10px 14px;
-  border-radius: 999px;
+  border-radius: 18px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 950;
   font-size: 0.92rem;
   background: rgba(2, 6, 23, 0.62);
   border: 1px solid rgba(148, 163, 184, 0.22);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   color: rgba(248, 250, 252, 0.92);
   animation: announceIn 900ms ease forwards;
   pointer-events: none;
 }
+
+.announceMain {
+  text-align: center;
+}
+
+.announceTags {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.announceTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.26);
+  font-size: 0.72rem;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.announceVs {
+  font-size: 0.70rem;
+  font-weight: 1000;
+  color: rgba(148, 163, 184, 0.70);
+}
+
+.announceTag.llm-gpt { border-color: rgba(34, 211, 238, 0.35); }
+.announceTag.llm-claude { border-color: rgba(251, 191, 36, 0.35); }
+.announceTag.llm-gemini { border-color: rgba(34, 197, 94, 0.35); }
+.announceTag.llm-grok { border-color: rgba(251, 113, 133, 0.35); }
 
 .arenaAnnounce.finish {
   font-size: 1.08rem;

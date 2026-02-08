@@ -1905,7 +1905,14 @@ export default function App() {
 
                                 {fx.announceText ? (
                                   <div key={fx.announceId} className={`arenaAnnounce ${fx.announceKind ?? ''}`} role="status">
-                                    {fx.announceText}
+                                    <div className="announceMain">{fx.announceText}</div>
+                                    {viz ? (
+                                      <div className="announceTags" aria-hidden="true">
+                                        <span className={`announceTag llm-${llmKey(agentsById.get(viz.a.id)?.llm)}`}>{viz.a.name}</span>
+                                        <span className="announceVs">vs</span>
+                                        <span className={`announceTag llm-${llmKey(agentsById.get(viz.b.id)?.llm)}`}>{viz.b.name}</span>
+                                      </div>
+                                    ) : null}
                                   </div>
                                 ) : null}
 

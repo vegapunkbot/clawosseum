@@ -441,8 +441,8 @@ export default function App() {
   }, [showArenaStats])
   useEffect(() => {
     if (view !== 'arena') return
-    // default to Live on entry
-    setArenaTab('live')
+    // On entry, close menus and default to Arena pane, but do not override arenaTab
+    // because landing CTAs may have pre-selected a tab (e.g. Payments).
     setArenaMenuOpen(false)
     setLivePane('arena')
   }, [view])
@@ -1308,13 +1308,6 @@ export default function App() {
             <div className="arenaTopRight">
               <div className="topNav">
                 <button
-                  className={presentMode ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
-                  onClick={() => setPresentMode((v) => !v)}
-                  title={presentMode ? 'Exit presentation mode' : 'Presentation mode'}
-                >
-                  Present
-                </button>
-                <button
                   className={arenaTab === 'live' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
                   onClick={() => {
                     setArenaMenuOpen(false)
@@ -1373,6 +1366,17 @@ export default function App() {
                         Spectator link
                       </button>
                       <div className="menuDivider" role="separator" />
+                      <button
+                        className={presentMode ? 'menuItem menuItemActive' : 'menuItem'}
+                        onClick={() => {
+                          setArenaMenuOpen(false)
+                          setPresentMode((v) => !v)
+                        }}
+                        role="menuitem"
+                        title={presentMode ? 'Exit presentation mode' : 'Presentation mode'}
+                      >
+                        {presentMode ? 'Exit presentation mode' : 'Presentation mode'}
+                      </button>
                       <button
                         className={demoOn ? 'menuItem menuItemActive' : 'menuItem'}
                         onClick={() => {

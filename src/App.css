@@ -63,6 +63,15 @@ html, body, #root {
   margin: 0;
 }
 
+/* Presentation mode: maximize content for projector/stream */
+.presentMode .siteFooter {
+  display: none;
+}
+
+.presentMode.pageArena .overlayArena {
+  bottom: 14px;
+}
+
 .siteFooter {
   position: relative;
   margin: 0 12px 12px;
@@ -568,6 +577,11 @@ html, body, #root {
   bottom: 170px; /* leave room for footer (mobile can be tall) */
   width: auto;
   margin: 0;
+}
+
+.presentMode.pageArena .overlayArena {
+  top: 92px;
+  bottom: 16px;
 }
 
 .pageArena .overlay {

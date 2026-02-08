@@ -419,6 +419,7 @@ export default function App() {
   const [arenaTab, setArenaTab] = useState<'live' | 'setup' | 'fees' | 'spectate'>('live')
   const [arenaMenuOpen, setArenaMenuOpen] = useState(false)
   const [livePane, setLivePane] = useState<'arena' | 'timeline' | 'roster' | 'matches'>('arena')
+  const [presentMode, setPresentMode] = useState(false)
   useEffect(() => {
     if (view !== 'arena') return
     // default to Live on entry
@@ -1039,7 +1040,7 @@ export default function App() {
   const wsStatusUi: WsStatus = demoOn ? 'open' : wsStatus
 
   return (
-    <div className={`page ${view === 'arena' ? 'pageArena' : ''}`}> 
+    <div className={`page ${view === 'arena' ? 'pageArena' : ''} ${presentMode ? 'presentMode' : ''}`}> 
       <main className="siteMain">
       {view === 'landing' ? (
         <div className="landing">
@@ -1287,6 +1288,13 @@ export default function App() {
 
             <div className="arenaTopRight">
               <div className="topNav">
+                <button
+                  className={presentMode ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                  onClick={() => setPresentMode((v) => !v)}
+                  title={presentMode ? 'Exit presentation mode' : 'Presentation mode'}
+                >
+                  Present
+                </button>
                 <button
                   className={arenaTab === 'live' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
                   onClick={() => {

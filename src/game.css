@@ -547,7 +547,7 @@
   left: -12%;
   right: -12%;
   top: -54px;
-  height: 210px;
+  bottom: 322px;
   transform: skewX(-8deg);
   pointer-events: none;
   z-index: 0;
@@ -581,19 +581,19 @@
   right: -12%;
 
   /* Top wall: ~1/4 height of the other layers */
-  top: 112px;
+  bottom: 288px;
   height: 34px;
 
   transform: skewX(-8deg);
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
 
   background-image: url('/arena-rim.jpg');
   background-repeat: repeat-x;
   background-size: auto 34px;
-  background-position: center top;
+  background-position: center bottom;
 
-  opacity: 0.92;
+  opacity: 0.94;
   filter: saturate(0.95) contrast(1.05);
 }
 
@@ -635,8 +635,8 @@
   left: -10%;
   right: -10%;
 
-  /* sits directly above the wall layer */
-  top: 132px;
+  /* stands sit above mid-walls */
+  bottom: 180px;
   height: 108px;
 
   transform: skewX(-8deg);
@@ -646,12 +646,12 @@
   background-image: url('/arena-stands.jpg');
   background-repeat: repeat-x;
   background-size: auto 108px;
-  background-position: center top;
+  background-position: center bottom;
 
   filter: saturate(1.0) contrast(1.06);
-  opacity: 0.92;
+  opacity: 0.94;
 
   /* almost full-width; tiny edge fade */
-  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.96), rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, rgba(0,0,0,0.96));
-  mask-image: linear-gradient(90deg, rgba(0,0,0,0.96), rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, rgba(0,0,0,0.96));
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.98), rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, rgba(0,0,0,0.98));
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0.98), rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, rgba(0,0,0,0.98));
 }

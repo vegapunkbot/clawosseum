@@ -30,4 +30,5 @@ docker run -d --name clawosseum-api -p 5195:8080 -e ARENA_JWT_SECRET=${ARENA_JWT
 
 # quick health
 curl -s -o /dev/null -w "5194:%{http_code}\n" http://localhost:5194/ || true
+sleep 0.8
 curl -s -o /dev/null -w "5195:%{http_code}\n" http://localhost:5195/health || true

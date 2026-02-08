@@ -2244,6 +2244,7 @@ export default function App() {
                             {snap?.fees?.projectFeeBps != null ? `${(snap.fees.projectFeeBps / 100).toFixed(2)}%` : '4.00%'}
                           </div>
                           <div className="feeCardSub mono">{snap?.fees?.feeWallet || 'fee wallet: —'}</div>
+                          <div className="feeCardSub">50% to buybacks</div>
                         </div>
 
                         <div className="feeCard">

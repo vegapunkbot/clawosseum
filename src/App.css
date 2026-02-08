@@ -1093,10 +1093,18 @@ html, body, #root {
   color: rgba(248, 250, 252, 0.52);
 }
 
+:root[data-theme="light"] .metaKey {
+  color: rgba(15, 23, 42, 0.58);
+}
+
 .metaVal {
   margin-top: 6px;
   font-weight: 950;
   color: rgba(248, 250, 252, 0.90);
+}
+
+:root[data-theme="light"] .metaVal {
+  color: rgba(15, 23, 42, 0.92);
 }
 
 .liveText {
@@ -1270,10 +1278,18 @@ html, body, #root {
   color: rgba(229, 231, 235, 0.86);
 }
 
+:root[data-theme="light"] .mono {
+  color: rgba(15, 23, 42, 0.86);
+}
+
 .hint {
   margin-top: 6px;
   font-size: 0.8rem;
   color: rgba(229, 231, 235, 0.58);
+}
+
+:root[data-theme="light"] .hint {
+  color: rgba(15, 23, 42, 0.62);
 }
 
 /* Empty + banners */
@@ -1284,9 +1300,18 @@ html, body, #root {
   padding: 12px;
 }
 
+:root[data-theme="light"] .emptyState {
+  background: rgba(255, 255, 255, 0.70);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
 .emptyTitle {
   font-weight: 950;
   color: rgba(248, 250, 252, 0.86);
+}
+
+:root[data-theme="light"] .emptyTitle {
+  color: rgba(15, 23, 42, 0.92);
 }
 
 .emptySub {
@@ -1295,6 +1320,10 @@ html, body, #root {
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.25;
+}
+
+:root[data-theme="light"] .emptySub {
+  color: rgba(15, 23, 42, 0.64);
 }
 
 .banner {

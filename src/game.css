@@ -627,9 +627,9 @@
   left: -12%;
   right: -12%;
 
-  /* walls sit directly above the floor */
-  bottom: 98px;
-  height: 86px;
+  /* walls sit directly above the floor (slight overlap to avoid any dark seam) */
+  bottom: 84px;
+  height: 120px;
 
   transform: skewX(-8deg);
   pointer-events: none;
@@ -637,11 +637,21 @@
 
   background-image: url('/arena-walls.jpg');
   background-repeat: repeat-x;
-  background-size: auto 86px;
+  background-size: auto 120px;
   background-position: center bottom;
 
-  opacity: 0.92;
-  filter: saturate(0.95) contrast(1.05);
+  opacity: 0.94;
+  filter: saturate(0.98) contrast(1.05);
+}
+
+.arenaWalls::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* subtle top fade to blend into the stands */
+  background: linear-gradient(180deg, rgba(2,6,23,0.00), rgba(2,6,23,0.10));
+  mix-blend-mode: multiply;
 }
 
 /* --- Arena stands (tessellated crowd) --- */

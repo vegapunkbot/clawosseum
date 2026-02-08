@@ -60,6 +60,18 @@ type Snapshot = {
 
 type WsStatus = 'connecting' | 'open' | 'closed'
 
+type TokenMarket = {
+  address: string
+  symbol: string
+  name: string
+  priceUsd: number | null
+  marketCapUsd: number | null
+  change12h: number | null
+  change24h: number | null
+  dexUrl?: string | null
+  updatedAt: Date
+}
+
 function apiBase() {
   // Default: same-origin API.
   // Local dev docker: web on :5194 and api on :5195.
@@ -94,6 +106,23 @@ function fmtDuration(sec: number | null) {
   const ss = s % 60
   if (mm <= 0) return `${ss}s`
   return `${mm}m ${String(ss).padStart(2, '0')}s`
+}
+
+function fmtMoneyUsd(n: number | null | undefined) {
+  if (n == null || !Number.isFinite(n)) return '—'
+  const abs = Math.abs(n)
+  const fmt = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  if (abs >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`
+  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
+  if (abs >= 10_000) return `$${fmt(n)}`
+  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+}
+
+function fmtPriceUsd(n: number | null | undefined) {
+  if (n == null || !Number.isFinite(n)) return '—'
+  if (n >= 1) return `$${n.toFixed(4)}`
+  if (n >= 0.01) return `$${n.toFixed(6)}`
+  return `$${n.toPrecision(4)}`
 }
 
 function fmtAgeShort(from: Date | null, to: Date | null) {
@@ -189,6 +218,61 @@ function GladiatorSilhouette({ variant = 0, flip = false }: { variant?: 0 | 1 | 
       )}
     </svg>
   )
+}
+
+function useTokenMarket(address: string, nameOverride?: string | null) {
+  const [m, setM] = useState<TokenMarket | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!address) return
+
+    async function load() {
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${encodeURIComponent(address)}`)
+        const json = await res.json().catch(() => ({}))
+        const pairs = Array.isArray((json as any)?.pairs) ? (json as any).pairs : []
+        const best = pairs[0] || null
+
+        const symbol = (best?.baseToken?.symbol || '').toString() || 'TOKEN'
+        const name = (nameOverride || best?.baseToken?.name || symbol).toString()
+
+        const priceUsd = best?.priceUsd != null ? Number(best.priceUsd) : null
+        const marketCapUsd = best?.marketCap != null
+          ? Number(best.marketCap)
+          : (best?.fdv != null ? Number(best.fdv) : null)
+
+        const change12h = best?.priceChange?.h12 != null ? Number(best.priceChange.h12) : null
+        const change24h = best?.priceChange?.h24 != null ? Number(best.priceChange.h24) : null
+        const dexUrl = best?.url ? String(best.url) : null
+
+        if (!cancelled) {
+          setM({
+            address,
+            symbol,
+            name,
+            priceUsd: Number.isFinite(priceUsd as any) ? priceUsd : null,
+            marketCapUsd: Number.isFinite(marketCapUsd as any) ? marketCapUsd : null,
+            change12h: Number.isFinite(change12h as any) ? change12h : null,
+            change24h: Number.isFinite(change24h as any) ? change24h : null,
+            dexUrl,
+            updatedAt: new Date(),
+          })
+        }
+      } catch {
+        // keep last value
+      }
+    }
+
+    load()
+    const t = window.setInterval(load, 25_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(t)
+    }
+  }, [address, nameOverride])
+
+  return m
 }
 
 function useArenaState() {
@@ -427,6 +511,10 @@ function getInitialTheme(): 'dark' | 'light' {
 
 export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
+
+  const tokenAddress = (((import.meta as any)?.env?.VITE_TOKEN_ADDRESS as string) || 'So11111111111111111111111111111111111111112').trim()
+  const tokenName = (((import.meta as any)?.env?.VITE_TOKEN_NAME as string) || 'clawosseum').trim()
+  const market = useTokenMarket(tokenAddress, tokenName)
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => getInitialTheme())
   useEffect(() => {
@@ -1204,6 +1292,24 @@ export default function App() {
             ) : null}
 
             <div className="heroCols">
+              <div className="heroCard">
+                <div className="heroCardTitle">Token (placeholder)</div>
+                <div className="heroCardBody">
+                  <div className="hint">Using DexScreener market data. Token address is configurable via <span className="mono">VITE_TOKEN_ADDRESS</span>.</div>
+                  <div className="metaRow" style={{ marginTop: 10 }}>
+                    <span className="metaChip">{market?.symbol ?? tokenName.toUpperCase()}</span>
+                    <span className="metaChip">Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
+                    <span className="metaChip">MC: {fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
+                    <span className="metaChip">12h: {market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
+                    <span className="metaChip">24h: {market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
+                  </div>
+                  {market?.dexUrl ? (
+                    <div className="hint" style={{ marginTop: 10 }}>
+                      DexScreener: <a href={market.dexUrl} target="_blank" rel="noreferrer">open</a>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
               <div className="heroCard">
                 <div className="heroCardTitle">Current battle</div>
                 <div className="heroCardBody">
@@ -2082,6 +2188,18 @@ export default function App() {
         </div>
         <div className="footerMeta">
           <span>Clawosseum: Agent vs Agent Arena</span>
+          <span className="footerSep">•</span>
+          <span className="footerToken">
+            <span className="footerTokenMint mono">{market?.symbol ?? tokenName.toUpperCase()}</span>
+            <span className="footerSep">·</span>
+            <span>Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
+            <span className="footerSep">·</span>
+            <span>MC: {fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
+            <span className="footerSep">·</span>
+            <span>12h: {market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
+            <span className="footerSep">·</span>
+            <span>24h: {market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
+          </span>
         </div>
       </footer>
     </div>

@@ -281,13 +281,7 @@ html, body, #root {
   background: var(--bg2);
 }
 
-/* Arena floor tessellation */
-.pageArena .arenaBg {
-  background-image: url('/arena-floor.jpg');
-  background-repeat: repeat;
-  background-size: 360px 360px;
-  background-position: center;
-}
+/* arena floor is applied on the battle stage only (see game.css .arenaStage) */
 
 /* subtle scanlines + grain */
 .pageArena .arenaBg::before {

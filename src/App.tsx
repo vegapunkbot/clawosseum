@@ -1874,6 +1874,7 @@ export default function App() {
                           <div className="panelBody">
                             {viz ? (
                               <div className={`arena2d ${shakeOn ? 'shake' : ''}`} aria-label="2D battle arena">
+                                <div className="arenaStands" />
                                 <div className="arenaStage" />
                                 <div className="arenaStageLip" />
                                 <div className="arenaHud">

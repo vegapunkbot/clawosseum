@@ -3,7 +3,8 @@
 .tokenWrap {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 14px 38px;
+  /* arenaTopbar is fixed; leave breathing room */
+  padding: 86px 14px 38px;
 }
 
 .bulletList {

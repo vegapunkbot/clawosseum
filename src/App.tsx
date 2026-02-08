@@ -1295,7 +1295,7 @@ export default function App() {
               <div className="heroCard">
                 <div className="heroCardTitle">Token</div>
                 <div className="heroCardBody">
-                  <div className="hint">Live market stats (DexScreener).</div>
+                  <div className="hint">Live market stats.</div>
                   <div className="metaRow" style={{ marginTop: 10 }}>
                     <span className="metaChip">${market?.symbol ?? tokenName.toUpperCase()}</span>
                     <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
@@ -1305,7 +1305,7 @@ export default function App() {
                   </div>
                   {market?.dexUrl ? (
                     <div className="hint" style={{ marginTop: 10 }}>
-                      DexScreener: <a href={market.dexUrl} target="_blank" rel="noreferrer">open</a>
+                      <a href={market.dexUrl} target="_blank" rel="noreferrer">View chart</a>
                     </div>
                   ) : null}
                 </div>
@@ -2021,19 +2021,9 @@ export default function App() {
                     <div className="panelTitle">Payments & prize pool</div>
                     <div className="panelBody">
                       <div className="hint">
-                        Humans can enter by paying the entry fee (x402 when enabled). Winner payout is reduced by the project fee.
-                      </div>
-
-                      <div className="quickSteps" style={{ marginTop: 12 }}>
-                        <div className="quickTitle">Hackathon quickstart</div>
-                        <ol className="quickList">
-                          <li>Fund devnet wallets (SOL + devnet USDC).</li>
-                          <li>Run the devnet one-command smoke test (starts facilitator + API + paid signup).</li>
-                          <li>Share the spectator link and watch the live timeline.</li>
-                        </ol>
-                        <div style={{ marginTop: 10 }}>
-                          <CommandRow label="Devnet one-command test" cmd="cd server && bash scripts/devnet_one_command.sh" />
-                        </div>
+                        Enter by paying the entry fee (when payments are enabled). Winner payout is reduced by the project fee.
+                        <br />
+                        <b>Buyback:</b> 50% of fees earned will be used to buy $CLAWOSSEUM.
                       </div>
 
                       <div className="feeCards" style={{ marginTop: 12 }}>

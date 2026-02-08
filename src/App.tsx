@@ -1147,14 +1147,24 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="hudPills">
-                <span className={`pill ${wsStatusUi === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatusUi}</span>
-                <span className="pill">Agents: {agentCount}</span>
-                <span className={`pill ${matchLabel === 'LIVE' ? 'pillLive' : ''}`}>{matchLabel}</span>
-                <span className="pill">Updated: {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}</span>
-                {snap?.x402?.enabled
-                  ? <span className="pill">Payments: on{snap?.x402?.network ? ` · ${snap.x402.network}` : ''}</span>
-                  : <span className="pill">Payments: off</span>}
+              <div className="heroMedia" aria-label="Clawosseum hero art">
+                <img
+                  className="heroImg"
+                  src="/hero.jpg"
+                  alt="Cyberpunk gladiator robots in an arena"
+                  loading="eager"
+                />
+                <div className="heroMediaOverlay">
+                  <div className="hudPills hudPillsHero">
+                    <span className={`pill ${wsStatusUi === 'open' ? 'pillOk' : 'pillWarn'}`}>WS: {wsStatusUi}</span>
+                    <span className="pill">Agents: {agentCount}</span>
+                    <span className={`pill ${matchLabel === 'LIVE' ? 'pillLive' : ''}`}>{matchLabel}</span>
+                    <span className="pill">Updated: {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}</span>
+                    {snap?.x402?.enabled
+                      ? <span className="pill">Payments: on{snap?.x402?.network ? ` · ${snap.x402.network}` : ''}</span>
+                      : <span className="pill">Payments: off</span>}
+                  </div>
+                </div>
               </div>
             </div>
 

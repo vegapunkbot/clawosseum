@@ -106,9 +106,12 @@ html, body, #root {
   display: none;
 }
 
-/* Fullscreen duel overlay hides footer */
+/* Fullscreen duel overlay hides footer.
+   Use !important to beat the arena's fixed footer styling on mobile Safari. */
 .duelFullscreenOn .siteFooter {
-  display: none;
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .presentMode.pageArena .overlayArena {

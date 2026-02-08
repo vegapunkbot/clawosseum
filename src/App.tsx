@@ -566,8 +566,11 @@ function getInitialTheme(): 'dark' | 'light' {
 export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
 
-  const tokenAddress = (((import.meta as any)?.env?.VITE_TOKEN_ADDRESS as string) || 'So11111111111111111111111111111111111111112').trim()
-  const tokenName = (((import.meta as any)?.env?.VITE_TOKEN_NAME as string) || 'clawosseum').trim()
+  // Token info is intentionally disabled in production until launch.
+  // Enable by setting VITE_TOKEN_ENABLED=1 and providing VITE_TOKEN_ADDRESS / VITE_TOKEN_NAME.
+  const tokenEnabled = String(((import.meta as any)?.env?.VITE_TOKEN_ENABLED as string) || '').trim() === '1'
+  const tokenAddress = tokenEnabled ? String(((import.meta as any)?.env?.VITE_TOKEN_ADDRESS as string) || '').trim() : ''
+  const tokenName = tokenEnabled ? String(((import.meta as any)?.env?.VITE_TOKEN_NAME as string) || '').trim() : ''
   const market = useTokenMarket(tokenAddress, tokenName)
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => getInitialTheme())
@@ -1579,7 +1582,7 @@ export default function App() {
                       ;(e.currentTarget as HTMLImageElement).style.display = 'none'
                     }}
                   />
-                  {market?.symbol ? `$${market.symbol}` : `$${tokenName.toUpperCase()}`}
+                  Token (coming soon)
                 </div>
                 <div className="arenaMarkSub">Tokenomics</div>
               </div>
@@ -1591,17 +1594,19 @@ export default function App() {
                     Chart <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
                   </a>
                 ) : null}
-                <a className="topLink" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
-                  Explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                </a>
+                {tokenAddress ? (
+                  <a className="topLink" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
+                    Explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>
 
           <div className="tokenWrap">
             <div className="sectionHeader" style={{ marginTop: 18 }}>
-              <div className="sectionTitle">$CLAWOSSEUM</div>
-              <div className="sectionHint">Fair launch. Built for the arena.</div>
+              <div className="sectionTitle">Token</div>
+              <div className="sectionHint">Coming soon.</div>
             </div>
 
             <div className="hudGrid" style={{ marginTop: 12 }}>
@@ -1651,16 +1656,18 @@ export default function App() {
                   <div className="structure" style={{ marginTop: 6 }}>
                     <div className="structureRow">
                       <div className="structureKey">Name</div>
-                      <div className="structureVal">{market?.name ?? 'Clawosseum'}</div>
+                      <div className="structureVal">{tokenAddress ? (market?.name ?? 'Clawosseum') : 'Coming soon'}</div>
                     </div>
                     <div className="structureRow">
                       <div className="structureKey">Symbol</div>
-                      <div className="structureVal mono">${market?.symbol ?? tokenName.toUpperCase()}</div>
+                      <div className="structureVal mono">{tokenAddress ? `$${market?.symbol ?? (tokenName || 'TOKEN').toUpperCase()}` : '—'}</div>
                     </div>
-                    <div className="structureRow">
-                      <div className="structureKey">Mint</div>
-                      <div className="structureVal mono">{tokenAddress}</div>
-                    </div>
+                    {tokenAddress ? (
+                      <div className="structureRow">
+                        <div className="structureKey">Mint</div>
+                        <div className="structureVal mono">{tokenAddress}</div>
+                      </div>
+                    ) : null}
                     {market?.pairAddress ? (
                       <div className="structureRow">
                         <div className="structureKey">Pair</div>
@@ -1705,9 +1712,11 @@ export default function App() {
                         View chart <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
                       </a>
                     ) : null}
-                    <a className="linkCard" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
-                      Token explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                    </a>
+                    {tokenAddress ? (
+                      <a className="linkCard" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
+                        Token explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
+                      </a>
+                    ) : null}
                     <a className="linkCard" href="/terms.html" target="_blank" rel="noreferrer">
                       Terms <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
                     </a>

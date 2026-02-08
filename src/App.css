@@ -1,25 +1,45 @@
 :root {
-  --bg: #060713;
-  --panel: rgba(11, 14, 35, 0.62);
-  --panel2: rgba(2, 6, 23, 0.42);
-  --border: rgba(125, 211, 252, 0.22);
-  --border2: rgba(244, 114, 182, 0.18);
-  --text: rgba(248, 250, 252, 0.92);
-  --muted: rgba(248, 250, 252, 0.70);
+  /* Dark mode: cyberpunk x gladiator */
+  --bg: #05060b;
+  --bg2: #0a0b13;
+  --panel: rgba(10, 12, 22, 0.78);
+  --panel2: rgba(5, 6, 14, 0.52);
+  --border: rgba(34, 211, 238, 0.30);
+  --border2: rgba(251, 113, 133, 0.22);
+  --text: rgba(248, 250, 252, 0.94);
+  --muted: rgba(248, 250, 252, 0.72);
+
+  /* neon accents */
   --cyan: #22d3ee;
   --pink: #fb7185;
   --violet: #a78bfa;
+  --gold: #fbbf24;
   --accent: var(--cyan);
+
+  /* background FX */
+  --grid: rgba(34, 211, 238, 0.07);
+  --grid2: rgba(251, 113, 133, 0.045);
 }
 
 :root[data-theme="light"] {
-  --bg: #f6f7fb;
-  --panel: rgba(255, 255, 255, 0.85);
+  /* Light mode: bright marble/arena + neon accents */
+  --bg: #f4f2ee;
+  --bg2: #ffffff;
+  --panel: rgba(255, 255, 255, 0.86);
   --panel2: rgba(255, 255, 255, 0.70);
-  --border: rgba(15, 23, 42, 0.12);
+  --border: rgba(15, 23, 42, 0.14);
   --border2: rgba(15, 23, 42, 0.10);
   --text: rgba(15, 23, 42, 0.92);
-  --muted: rgba(15, 23, 42, 0.68);
+  --muted: rgba(15, 23, 42, 0.66);
+
+  --cyan: #0891b2;
+  --pink: #e11d48;
+  --violet: #6d28d9;
+  --gold: #b45309;
+  --accent: var(--violet);
+
+  --grid: rgba(2, 132, 199, 0.06);
+  --grid2: rgba(225, 29, 72, 0.04);
 }
 
 * { box-sizing: border-box; }
@@ -27,10 +47,7 @@
 html, body, #root {
   height: 100%;
   margin: 0;
-  background: radial-gradient(1200px 900px at 20% 12%, rgba(34, 211, 238, 0.14), transparent 55%),
-              radial-gradient(900px 700px at 92% 18%, rgba(251, 113, 133, 0.12), transparent 58%),
-              radial-gradient(900px 700px at 60% 90%, rgba(167, 139, 250, 0.10), transparent 62%),
-              var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   overflow-x: hidden;
@@ -41,6 +58,27 @@ html, body, #root {
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+/* Global background texture (no radial gradients): cyber-grid + subtle scanlines */
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, var(--grid), var(--grid) 1px, transparent 1px, transparent 26px),
+    repeating-linear-gradient(90deg, var(--grid2), var(--grid2) 1px, transparent 1px, transparent 26px),
+    repeating-linear-gradient(180deg, rgba(248, 250, 252, 0.03), rgba(248, 250, 252, 0.03) 1px, transparent 1px, transparent 8px);
+  opacity: 0.95;
+  mix-blend-mode: normal;
+}
+
+/* Ensure app content sits above the background texture */
+.siteMain, .siteFooter, .arenaTopbar, .arenaBg {
+  position: relative;
+  z-index: 1;
 }
 
 .siteMain {
@@ -231,11 +269,7 @@ html, body, #root {
 .arenaBg {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(900px 700px at 10% 15%, rgba(34, 211, 238, 0.18), transparent 55%),
-    radial-gradient(700px 520px at 92% 18%, rgba(251, 113, 133, 0.16), transparent 58%),
-    radial-gradient(900px 700px at 55% 95%, rgba(167, 139, 250, 0.14), transparent 62%),
-    linear-gradient(180deg, rgba(2, 6, 23, 0.35), rgba(2, 6, 23, 0.85));
+  background: var(--bg2);
 }
 
 /* subtle scanlines + grain */
@@ -690,17 +724,15 @@ html, body, #root {
 
 .hero {
   width: min(1120px, 100%);
-  border: 1px solid rgba(34, 211, 238, 0.20);
-  background:
-    linear-gradient(135deg, rgba(2, 6, 23, 0.72), rgba(2, 6, 23, 0.34)),
-    radial-gradient(900px 360px at 15% 10%, rgba(34, 211, 238, 0.16), transparent 60%),
-    radial-gradient(700px 320px at 85% 10%, rgba(251, 113, 133, 0.14), transparent 60%);
+  border: 1px solid var(--border);
+  background: var(--panel);
   border-radius: 26px;
   padding: 22px;
   backdrop-filter: blur(14px);
   box-shadow:
-    0 0 0 1px rgba(251, 113, 133, 0.08) inset,
-    0 18px 80px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(251, 113, 133, 0.10) inset,
+    0 0 0 1px rgba(34, 211, 238, 0.06),
+    0 18px 80px rgba(0, 0, 0, 0.55);
 }
 
 .heroTop {

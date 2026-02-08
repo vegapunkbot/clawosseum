@@ -1696,7 +1696,9 @@ export default function App() {
                         </div>
                       </div>
                         </>
-                      ) : null}
+                      ) : (
+                        <div className="statsHidden">Stats hidden — click <span className="mono">Show stats</span> to view match metadata and leaderboards.</div>
+                      )}
                     </>
                   ) : null}
 

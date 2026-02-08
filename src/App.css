@@ -451,6 +451,17 @@ html, body, #root {
   grid-template-columns: 1fr;
 }
 
+.statsHidden {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.12);
+  color: rgba(248, 250, 252, 0.70);
+  font-weight: 750;
+  line-height: 1.35;
+}
+
 @media (min-width: 960px) {
   .statsGrid { grid-template-columns: 1fr 1fr; }
 }

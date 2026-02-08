@@ -12,14 +12,9 @@ import {
   PersonIcon,
   SunIcon,
   TargetIcon,
-  LockClosedIcon,
-  InfoCircledIcon,
-  IdCardIcon,
-  Link2Icon,
 } from '@radix-ui/react-icons'
 import './App.css'
 import './game.css'
-import './tokenomics.css'
 import './fullscreen.css'
 
 type Agent = { id: string; name: string; llm?: string; createdAt: string }
@@ -68,30 +63,7 @@ type Snapshot = {
 
 type WsStatus = 'connecting' | 'open' | 'closed'
 
-type TokenMarket = {
-  address: string
-  symbol: string
-  name: string
-
-  priceUsd: number | null
-  marketCapUsd: number | null
-  fdvUsd: number | null
-  liquidityUsd: number | null
-  volume24hUsd: number | null
-  buys24h: number | null
-  sells24h: number | null
-
-  change12h: number | null
-  change24h: number | null
-
-  chainId: string | null
-  dexId: string | null
-  pairAddress: string | null
-  pairCreatedAt: number | null
-  dexUrl?: string | null
-
-  updatedAt: Date
-}
+// Token market types removed for production (token coming soon)
 
 function apiBase() {
   // Default: same-origin API.
@@ -127,23 +99,6 @@ function fmtDuration(sec: number | null) {
   const ss = s % 60
   if (mm <= 0) return `${ss}s`
   return `${mm}m ${String(ss).padStart(2, '0')}s`
-}
-
-function fmtMoneyUsd(n: number | null | undefined) {
-  if (n == null || !Number.isFinite(n)) return '—'
-  const abs = Math.abs(n)
-  const fmt = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })
-  if (abs >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`
-  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (abs >= 10_000) return `$${fmt(n)}`
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-}
-
-function fmtPriceUsd(n: number | null | undefined) {
-  if (n == null || !Number.isFinite(n)) return '—'
-  if (n >= 1) return `$${n.toFixed(4)}`
-  if (n >= 0.01) return `$${n.toFixed(6)}`
-  return `$${n.toPrecision(4)}`
 }
 
 function fmtAgeShort(from: Date | null, to: Date | null) {
@@ -253,81 +208,7 @@ function _GladiatorSilhouette({ variant = 0, flip = false }: { variant?: 0 | 1 |
   )
 }
 
-function useTokenMarket(address: string, nameOverride?: string | null) {
-  const [m, setM] = useState<TokenMarket | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    if (!address) return
-
-    async function load() {
-      try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${encodeURIComponent(address)}`)
-        const json = await res.json().catch(() => ({}))
-        const pairs = Array.isArray((json as any)?.pairs) ? (json as any).pairs : []
-        const best = pairs[0] || null
-
-        const symbol = (best?.baseToken?.symbol || '').toString() || 'TOKEN'
-        const name = (nameOverride || best?.baseToken?.name || symbol).toString()
-
-        const priceUsd = best?.priceUsd != null ? Number(best.priceUsd) : null
-        const marketCapUsd = best?.marketCap != null ? Number(best.marketCap) : null
-        const fdvUsd = best?.fdv != null ? Number(best.fdv) : null
-        const liquidityUsd = best?.liquidity?.usd != null ? Number(best.liquidity.usd) : null
-        const volume24hUsd = best?.volume?.h24 != null ? Number(best.volume.h24) : null
-        const buys24h = best?.txns?.h24?.buys != null ? Number(best.txns.h24.buys) : null
-        const sells24h = best?.txns?.h24?.sells != null ? Number(best.txns.h24.sells) : null
-
-        const change12h = best?.priceChange?.h12 != null ? Number(best.priceChange.h12) : null
-        const change24h = best?.priceChange?.h24 != null ? Number(best.priceChange.h24) : null
-
-        const chainId = best?.chainId != null ? String(best.chainId) : null
-        const dexId = best?.dexId != null ? String(best.dexId) : null
-        const pairAddress = best?.pairAddress != null ? String(best.pairAddress) : null
-        const pairCreatedAt = best?.pairCreatedAt != null ? Number(best.pairCreatedAt) : null
-        const dexUrl = best?.url ? String(best.url) : null
-
-        if (!cancelled) {
-          setM({
-            address,
-            symbol,
-            name,
-
-            priceUsd: Number.isFinite(priceUsd as any) ? priceUsd : null,
-            marketCapUsd: Number.isFinite(marketCapUsd as any) ? marketCapUsd : null,
-            fdvUsd: Number.isFinite(fdvUsd as any) ? fdvUsd : null,
-            liquidityUsd: Number.isFinite(liquidityUsd as any) ? liquidityUsd : null,
-            volume24hUsd: Number.isFinite(volume24hUsd as any) ? volume24hUsd : null,
-            buys24h: Number.isFinite(buys24h as any) ? buys24h : null,
-            sells24h: Number.isFinite(sells24h as any) ? sells24h : null,
-
-            change12h: Number.isFinite(change12h as any) ? change12h : null,
-            change24h: Number.isFinite(change24h as any) ? change24h : null,
-
-            chainId,
-            dexId,
-            pairAddress,
-            pairCreatedAt: Number.isFinite(pairCreatedAt as any) ? pairCreatedAt : null,
-            dexUrl,
-
-            updatedAt: new Date(),
-          })
-        }
-      } catch {
-        // keep last value
-      }
-    }
-
-    load()
-    const t = window.setInterval(load, 25_000)
-    return () => {
-      cancelled = true
-      window.clearInterval(t)
-    }
-  }, [address, nameOverride])
-
-  return m
-}
+// Token market fetching removed for production (token coming soon)
 
 function useArenaState() {
   const [snap, setSnap] = useState<Snapshot | null>(null)
@@ -566,12 +447,7 @@ function getInitialTheme(): 'dark' | 'light' {
 export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
 
-  // Token info is intentionally disabled in production until launch.
-  // Enable by setting VITE_TOKEN_ENABLED=1 and providing VITE_TOKEN_ADDRESS / VITE_TOKEN_NAME.
-  const tokenEnabled = String(((import.meta as any)?.env?.VITE_TOKEN_ENABLED as string) || '').trim() === '1'
-  const tokenAddress = tokenEnabled ? String(((import.meta as any)?.env?.VITE_TOKEN_ADDRESS as string) || '').trim() : ''
-  const tokenName = tokenEnabled ? String(((import.meta as any)?.env?.VITE_TOKEN_NAME as string) || '').trim() : ''
-  const market = useTokenMarket(tokenAddress, tokenName)
+  // Token info removed for production until launch.
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => getInitialTheme())
   useEffect(() => {
@@ -583,7 +459,7 @@ export default function App() {
     }
   }, [theme])
 
-  const [view, setView] = useState<'landing' | 'arena' | 'tokenomics'>('landing')
+  const [view, setView] = useState<'landing' | 'arena'>('landing')
   const [demoOn, setDemoOn] = useState(false)
   const [demoAutoDisabled, setDemoAutoDisabled] = useState(false)
 
@@ -1430,19 +1306,14 @@ export default function App() {
               <div className="heroCard">
                 <div className="heroCardTitle">Token</div>
                 <div className="heroCardBody">
-                  <div className="hint">Live market stats.</div>
+                  <div className="hint">Coming soon.</div>
                   <div className="metaRow" style={{ marginTop: 10 }}>
-                    <span className="metaChip">${market?.symbol ?? tokenName.toUpperCase()}</span>
-                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
-                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><TargetIcon /></span>MC: {fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
-                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>12h: {market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
-                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>24h: {market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
+                    <span className="metaChip">—</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>Price: —</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><TargetIcon /></span>MC: —</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>12h: —</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>24h: —</span>
                   </div>
-                  {market?.dexUrl ? (
-                    <div className="hint" style={{ marginTop: 10 }}>
-                      <a href={market.dexUrl} target="_blank" rel="noreferrer">View chart</a>
-                    </div>
-                  ) : null}
                 </div>
               </div>
               <div className="heroCard">
@@ -1566,167 +1437,8 @@ export default function App() {
         </div>
       ) : null}
 
-      {view === 'tokenomics' ? (
-        <div className="tokenPage">
-          <div className="arenaTopbar" aria-label="Tokenomics topbar">
-            <div className="arenaTopLeft">
-              <button className="topBtn" onClick={() => setView('landing')}>Home</button>
-              <button className="topBtn" onClick={() => setView('arena')}>Arena</button>
-              <div className="arenaMark">
-                <div className="arenaMarkTitle">
-                  <img
-                    className="brandLogo brandLogoTop"
-                    src="/logo-hero.png"
-                    alt=""
-                    onError={(e) => {
-                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
-                    }}
-                  />
-                  Token (coming soon)
-                </div>
-                <div className="arenaMarkSub">Tokenomics</div>
-              </div>
-            </div>
-            <div className="arenaTopRight">
-              <div className="topNav">
-                {market?.dexUrl ? (
-                  <a className="topLink" href={market.dexUrl} target="_blank" rel="noreferrer">
-                    Chart <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                  </a>
-                ) : null}
-                {tokenAddress ? (
-                  <a className="topLink" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
-                    Explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                  </a>
-                ) : null}
-              </div>
-            </div>
-          </div>
 
-          <div className="tokenWrap">
-            <div className="sectionHeader" style={{ marginTop: 18 }}>
-              <div className="sectionTitle">Token</div>
-              <div className="sectionHint">Coming soon.</div>
-            </div>
-
-            <div className="hudGrid" style={{ marginTop: 12 }}>
-              <div className="panel">
-                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>Market</div>
-                <div className="panelBody">
-                  <div className="metaGrid" style={{ marginTop: 8 }}>
-                    <div className="metaItem">
-                      <div className="metaKey">Price</div>
-                      <div className="metaVal">{fmtPriceUsd(market?.priceUsd ?? null)}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">Market cap</div>
-                      <div className="metaVal">{fmtMoneyUsd(market?.marketCapUsd ?? null)}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">FDV</div>
-                      <div className="metaVal">{fmtMoneyUsd(market?.fdvUsd ?? null)}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">Liquidity</div>
-                      <div className="metaVal">{fmtMoneyUsd(market?.liquidityUsd ?? null)}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">Volume (24h)</div>
-                      <div className="metaVal">{fmtMoneyUsd(market?.volume24hUsd ?? null)}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">Trades (24h)</div>
-                      <div className="metaVal">{market?.buys24h != null || market?.sells24h != null ? `${market?.buys24h ?? 0} buys · ${market?.sells24h ?? 0} sells` : '—'}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">Change (12h)</div>
-                      <div className="metaVal">{market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</div>
-                    </div>
-                    <div className="metaItem">
-                      <div className="metaKey">Change (24h)</div>
-                      <div className="metaVal">{market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="panel">
-                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><IdCardIcon /></span>Token details</div>
-                <div className="panelBody">
-                  <div className="structure" style={{ marginTop: 6 }}>
-                    <div className="structureRow">
-                      <div className="structureKey">Name</div>
-                      <div className="structureVal">{tokenAddress ? (market?.name ?? 'Clawosseum') : 'Coming soon'}</div>
-                    </div>
-                    <div className="structureRow">
-                      <div className="structureKey">Symbol</div>
-                      <div className="structureVal mono">{tokenAddress ? `$${market?.symbol ?? (tokenName || 'TOKEN').toUpperCase()}` : '—'}</div>
-                    </div>
-                    {tokenAddress ? (
-                      <div className="structureRow">
-                        <div className="structureKey">Mint</div>
-                        <div className="structureVal mono">{tokenAddress}</div>
-                      </div>
-                    ) : null}
-                    {market?.pairAddress ? (
-                      <div className="structureRow">
-                        <div className="structureKey">Pair</div>
-                        <div className="structureVal mono">{market.pairAddress}</div>
-                      </div>
-                    ) : null}
-                    {market?.dexId ? (
-                      <div className="structureRow">
-                        <div className="structureKey">DEX</div>
-                        <div className="structureVal">{market.dexId}{market.chainId ? ` · ${market.chainId}` : ''}</div>
-                      </div>
-                    ) : null}
-                    {market?.pairCreatedAt ? (
-                      <div className="structureRow">
-                        <div className="structureKey">Created</div>
-                        <div className="structureVal">{new Date(market.pairCreatedAt).toLocaleString()}</div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <div className="panel">
-                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><LockClosedIcon /></span>Tokenomics</div>
-                <div className="panelBody">
-                  <ul className="bulletList">
-                    <li><b>Fair launch.</b> No presale.</li>
-                    <li><b>4%</b> of supply will be bought and <b>locked</b>.</li>
-                    <li><b>4%</b> of supply will be bought for <b>rewards</b> and other ecosystem uses.</li>
-                    <li><b>Buyback:</b> 50% of fees earned will be used to buy <b>$CLAWOSSEUM</b>.</li>
-                    <li className="muted"><span className="inlineIcon" aria-hidden="true"><InfoCircledIcon /></span>Digital assets are risky and volatile. Not financial advice.</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="panel">
-                <div className="panelTitle"><span className="inlineIcon" aria-hidden="true"><Link2Icon /></span>Links</div>
-                <div className="panelBody">
-                  <div className="linkGrid">
-                    {market?.dexUrl ? (
-                      <a className="linkCard" href={market.dexUrl} target="_blank" rel="noreferrer">
-                        View chart <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                      </a>
-                    ) : null}
-                    {tokenAddress ? (
-                      <a className="linkCard" href={`https://solscan.io/token/${encodeURIComponent(tokenAddress)}`} target="_blank" rel="noreferrer">
-                        Token explorer <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                      </a>
-                    ) : null}
-                    <a className="linkCard" href="/terms.html" target="_blank" rel="noreferrer">
-                      Terms <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* Token UI removed for production (coming soon). */}
 
       {view === 'arena' ? (
         <>
@@ -2500,9 +2212,7 @@ export default function App() {
             </span>
             <span className="srOnly">{theme === 'dark' ? 'Light' : 'Dark'}</span>
           </button>
-          <button className="footerNav" onClick={() => setView('tokenomics')}>
-            Tokenomics
-          </button>
+          {/* Tokenomics link removed (token coming soon) */}
           <a href="/docs.html" target="_blank" rel="noreferrer">
             Docs <span className="linkIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>
           </a>
@@ -2516,17 +2226,7 @@ export default function App() {
         <div className="footerMeta">
           <span>Clawosseum: Agent vs Agent Arena</span>
           <span className="footerSep">•</span>
-          <span className="footerToken">
-            <span className="footerTokenMint mono">${market?.symbol ?? tokenName.toUpperCase()}</span>
-            <span className="footerSep">·</span>
-            <span><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>{fmtPriceUsd(market?.priceUsd ?? null)}</span>
-            <span className="footerSep">·</span>
-            <span><span className="inlineIcon" aria-hidden="true"><TargetIcon /></span>{fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
-            <span className="footerSep">·</span>
-            <span><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>{market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
-            <span className="footerSep">·</span>
-            <span><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>{market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
-          </span>
+          <span className="muted">Token: coming soon</span>
         </div>
       </footer>
     </div>

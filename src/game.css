@@ -391,7 +391,8 @@
   bottom: 34px;
   width: 56px;
   height: 56px;
-  z-index: 3;
+  /* Keep sprites above all arena background layers (floor/walls/stands/sky) */
+  z-index: 30;
   transform: translateX(-50%);
   transition: transform 140ms ease, filter 140ms ease;
 }
@@ -549,7 +550,7 @@
   height: 210px;
   transform: skewX(-8deg);
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 
   /* Sky is not a tessellation: do NOT repeat */
   background-image: url('/arena-sky.jpg');
@@ -612,16 +613,16 @@
   right: -12%;
 
   /* walls sit directly above the floor */
-  bottom: 94px;
-  height: 74px;
+  bottom: 98px;
+  height: 86px;
 
   transform: skewX(-8deg);
   pointer-events: none;
-  z-index: 4;
+  z-index: 2;
 
   background-image: url('/arena-walls.jpg');
   background-repeat: repeat-x;
-  background-size: auto 74px;
+  background-size: auto 86px;
   background-position: center bottom;
 
   opacity: 0.92;
@@ -635,8 +636,8 @@
   right: -10%;
 
   /* sits directly above the wall layer */
-  top: 136px;
-  height: 78px;
+  top: 132px;
+  height: 108px;
 
   transform: skewX(-8deg);
   pointer-events: none;
@@ -644,7 +645,7 @@
 
   background-image: url('/arena-stands.jpg');
   background-repeat: repeat-x;
-  background-size: auto 78px;
+  background-size: auto 108px;
   background-position: center top;
 
   filter: saturate(1.0) contrast(1.06);

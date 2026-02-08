@@ -1486,178 +1486,189 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className={`hudGrid liveGrid livePane-${livePane}`}>
-                  <div className="panel" data-live="arena">
-                    <div className="panelTitle">Arena</div>
-                    <div className="panelBody">
-                      {viz ? (
-                        <div className={`arena2d ${shakeOn ? 'shake' : ''}`} aria-label="2D battle arena">
-                          <div className="arenaStage" />
-                          <div className="arenaHud">
-                            <div className="hpBox hpA">
-                              <div className="hpName">{viz.a.name}</div>
-                              <div className="hpBar"><div className="hpFill" style={{ width: `${viz.a.hp}%` }} /></div>
-                            </div>
-                            <div className="hpBox hpB">
-                              <div className="hpName">{viz.b.name}</div>
-                              <div className="hpBar"><div className="hpFill" style={{ width: `${viz.b.hp}%` }} /></div>
-                            </div>
-                          </div>
+                <div className="liveStack">
+                  {livePane === 'arena' ? (
+                    <>
+                      <div className="hudGrid duelGrid">
+                        <div className="panel">
+                          <div className="panelTitle">Arena</div>
+                          <div className="panelBody">
+                            {viz ? (
+                              <div className={`arena2d ${shakeOn ? 'shake' : ''}`} aria-label="2D battle arena">
+                                <div className="arenaStage" />
+                                <div className="arenaHud">
+                                  <div className="hpBox hpA">
+                                    <div className="hpName">{viz.a.name}</div>
+                                    <div className="hpBar"><div className="hpFill" style={{ width: `${viz.a.hp}%` }} /></div>
+                                  </div>
+                                  <div className="hpBox hpB">
+                                    <div className="hpName">{viz.b.name}</div>
+                                    <div className="hpBar"><div className="hpFill" style={{ width: `${viz.b.hp}%` }} /></div>
+                                  </div>
+                                </div>
 
-                          {fx.announceText ? (
-                            <div key={fx.announceId} className={`arenaAnnounce ${fx.announceKind ?? ''}`} role="status">
-                              {fx.announceText}
-                            </div>
-                          ) : null}
+                                {fx.announceText ? (
+                                  <div key={fx.announceId} className={`arenaAnnounce ${fx.announceKind ?? ''}`} role="status">
+                                    {fx.announceText}
+                                  </div>
+                                ) : null}
 
-                          {fx.sparkX != null ? <div key={fx.sparkId} className="spark" style={{ left: `${fx.sparkX}%` }} /> : null}
+                                {fx.sparkX != null ? <div key={fx.sparkId} className="spark" style={{ left: `${fx.sparkX}%` }} /> : null}
 
-                          <div className={`fighterSprite spriteA state-${viz.a.state}`} style={{ left: `${viz.a.x}%` }}>
-                            <div className="spriteBody">
-                              <GladiatorSilhouette variant={(hashString(viz.a.id) % 4) as any} />
-                            </div>
-                            <div className="spriteShadow" />
-                          </div>
-                          <div className={`fighterSprite spriteB state-${viz.b.state}`} style={{ left: `${viz.b.x}%` }}>
-                            <div className="spriteBody">
-                              <GladiatorSilhouette variant={(hashString(viz.b.id) % 4) as any} flip />
-                            </div>
-                            <div className="spriteShadow" />
+                                <div className={`fighterSprite spriteA state-${viz.a.state}`} style={{ left: `${viz.a.x}%` }}>
+                                  <div className="spriteBody">
+                                    <GladiatorSilhouette variant={(hashString(viz.a.id) % 4) as any} />
+                                  </div>
+                                  <div className="spriteShadow" />
+                                </div>
+                                <div className={`fighterSprite spriteB state-${viz.b.state}`} style={{ left: `${viz.b.x}%` }}>
+                                  <div className="spriteBody">
+                                    <GladiatorSilhouette variant={(hashString(viz.b.id) % 4) as any} flip />
+                                  </div>
+                                  <div className="spriteShadow" />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="hint">Start the demo to see a mocked 2D battle.</div>
+                            )}
                           </div>
                         </div>
-                      ) : (
-                        <div className="hint">Start the demo to see a mocked 2D battle.</div>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="panel" data-live="arena">
-                    <div className="panelTitle">Challenge</div>
-                    <div className="panelBody">
-                      <div className="hint">
-                        {demoOn
-                          ? 'Problem: First non-repeating character'
-                          : 'When a match runs, the current challenge will appear here.'}
+                        <div className="panel">
+                          <div className="panelTitle">Challenge</div>
+                          <div className="panelBody">
+                            <div className="hint">
+                              {demoOn
+                                ? 'Problem: First non-repeating character'
+                                : 'When a match runs, the current challenge will appear here.'}
+                            </div>
+
+                            {demoOn ? (
+                              <div className="challengeCard" style={{ marginTop: 10 }}>
+                                <div className="challengeRow">
+                                  <span className="challengeKey">Prompt</span>
+                                  <span className="challengeVal">Return the first character in a string that does not repeat.</span>
+                                </div>
+                                <div className="challengeRow">
+                                  <span className="challengeKey">Constraints</span>
+                                  <span className="challengeVal">O(n) preferred · handle Unicode safely</span>
+                                </div>
+                                <div className="challengeRow">
+                                  <span className="challengeKey">Scoring</span>
+                                  <span className="challengeVal">Correctness + speed + clarity</span>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
 
-                      {demoOn ? (
-                        <div className="challengeCard" style={{ marginTop: 10 }}>
-                          <div className="challengeRow">
-                            <span className="challengeKey">Prompt</span>
-                            <span className="challengeVal">Return the first character in a string that does not repeat.</span>
-                          </div>
-                          <div className="challengeRow">
-                            <span className="challengeKey">Constraints</span>
-                            <span className="challengeVal">O(n) preferred · handle Unicode safely</span>
-                          </div>
-                          <div className="challengeRow">
-                            <span className="challengeKey">Scoring</span>
-                            <span className="challengeVal">Correctness + speed + clarity</span>
+                      <div className="statsHeader">Match & stats</div>
+
+                      <div className="hudGrid statsGrid">
+                        <div className="panel">
+                          <div className="panelTitle">Match metadata</div>
+                          <div className="panelBody">
+                            {fighters ? (
+                              <>
+                                <div className="vsRow">
+                                  <span className="fighterA">{fighters.a}</span>
+                                  <span className="vs">vs</span>
+                                  <span className="fighterB">{fighters.b}</span>
+                                </div>
+
+                                <div className="metaGrid">
+                                  <div className="metaCard">
+                                    <div className="metaKey">Match ID</div>
+                                    <div className="metaVal mono">{matchMeta?.id ?? '—'}</div>
+                                  </div>
+                                  <div className="metaCard">
+                                    <div className="metaKey">Status</div>
+                                    <div className={`metaVal ${matchMeta?.status === 'running' ? 'liveText' : ''}`}>{matchMeta?.status ?? '—'}</div>
+                                  </div>
+                                  <div className="metaCard">
+                                    <div className="metaKey">Started</div>
+                                    <div className="metaVal">{fmtDateTime(matchMeta?.startedAt ?? null)}</div>
+                                  </div>
+                                  <div className="metaCard">
+                                    <div className="metaKey">Ended</div>
+                                    <div className="metaVal">{fmtDateTime(matchMeta?.endedAt ?? null)}</div>
+                                  </div>
+                                  <div className="metaCard">
+                                    <div className="metaKey">Duration</div>
+                                    <div className="metaVal">{fmtDuration(matchMeta?.durationSec ?? null)}</div>
+                                  </div>
+                                </div>
+
+                                <div className="hint">
+                                  {activeMatch?.status === 'running'
+                                    ? 'LIVE: duration ticks using serverTime snapshots.'
+                                    : fighters.winner
+                                      ? `Winner: ${fighters.winner}`
+                                      : 'Waiting for result…'}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="emptyState">
+                                <div className="emptyTitle">No match in progress</div>
+                                <div className="emptySub">When agents start a match, the live timeline will populate here.</div>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ) : null}
-                    </div>
-                  </div>
 
-                  <div className="panel" data-live="arena">
-                    <div className="panelTitle">Match metadata</div>
-                    <div className="panelBody">
-                      {fighters ? (
-                        <>
-                          <div className="vsRow">
-                            <span className="fighterA">{fighters.a}</span>
-                            <span className="vs">vs</span>
-                            <span className="fighterB">{fighters.b}</span>
+                        <div className="panel">
+                          <div className="panelTitle">Current season</div>
+                          <div className="panelBody">
+                            <div className="metaRow">
+                              <span className="metaChip">Run: {stats.seasonNumber ? `#${stats.seasonNumber}` : '—'} · {stats.seasonId}</span>
+                              <span className="metaChip">Started: {stats.seasonStartedAt ? fmtDateTime(safeDate(stats.seasonStartedAt)) : '—'}</span>
+                            </div>
+                            {stats.championSeason ? (
+                              <div className="hint" style={{ marginTop: 10 }}>
+                                Season leader: <span className="mono">{stats.championSeason.name}</span> · {stats.championSeason.wins}W / {stats.championSeason.played}P
+                              </div>
+                            ) : (
+                              <div className="hint">No season results yet.</div>
+                            )}
                           </div>
-
-                          <div className="metaGrid">
-                            <div className="metaCard">
-                              <div className="metaKey">Match ID</div>
-                              <div className="metaVal mono">{matchMeta?.id ?? '—'}</div>
-                            </div>
-                            <div className="metaCard">
-                              <div className="metaKey">Status</div>
-                              <div className={`metaVal ${matchMeta?.status === 'running' ? 'liveText' : ''}`}>{matchMeta?.status ?? '—'}</div>
-                            </div>
-                            <div className="metaCard">
-                              <div className="metaKey">Started</div>
-                              <div className="metaVal">{fmtDateTime(matchMeta?.startedAt ?? null)}</div>
-                            </div>
-                            <div className="metaCard">
-                              <div className="metaKey">Ended</div>
-                              <div className="metaVal">{fmtDateTime(matchMeta?.endedAt ?? null)}</div>
-                            </div>
-                            <div className="metaCard">
-                              <div className="metaKey">Duration</div>
-                              <div className="metaVal">{fmtDuration(matchMeta?.durationSec ?? null)}</div>
-                            </div>
-                          </div>
-
-                          <div className="hint">
-                            {activeMatch?.status === 'running'
-                              ? 'LIVE: duration ticks using serverTime snapshots.'
-                              : fighters.winner
-                                ? `Winner: ${fighters.winner}`
-                                : 'Waiting for result…'}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="emptyState">
-                          <div className="emptyTitle">No match in progress</div>
-                          <div className="emptySub">When agents start a match, the live timeline will populate here.</div>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="panel" data-live="arena">
-                    <div className="panelTitle">Current season</div>
-                    <div className="panelBody">
-                      <div className="metaRow">
-                        <span className="metaChip">Run: {stats.seasonNumber ? `#${stats.seasonNumber}` : '—'} · {stats.seasonId}</span>
-                        <span className="metaChip">Started: {stats.seasonStartedAt ? fmtDateTime(safeDate(stats.seasonStartedAt)) : '—'}</span>
+                        <div className="panel">
+                          <div className="panelTitle">Leaderboards (season)</div>
+                          <div className="panelBody">
+                            <LeaderboardTable title="Season (by wins)" rows={stats.seasonByWins} empty="No season matches yet." />
+                          </div>
+                        </div>
+
+                        <div className="panel">
+                          <div className="panelTitle">Leaderboards (all-time)</div>
+                          <div className="panelBody">
+                            <LeaderboardTable title="All-time (by wins)" rows={stats.allByWins} empty="No matches recorded yet." />
+                            <div style={{ marginTop: 14 }}>
+                              <div className="subTitle">Top win-rate (min 3, all-time)</div>
+                              {stats.topRateAll.length === 0 ? (
+                                <div className="hint">No agents have 3+ matches yet.</div>
+                              ) : (
+                                <ul className="rankList" style={{ marginTop: 6 }}>
+                                  {stats.topRateAll.map((x, i) => (
+                                    <li key={`rate-${x.id}`}>
+                                      <span className="rank">#{i + 1}</span>
+                                      <span className="rankName">{x.name}</span>
+                                      <span className="rankMeta">{Math.round(x.rate * 100)}%</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      {stats.championSeason ? (
-                        <div className="hint" style={{ marginTop: 10 }}>
-                          Season leader: <span className="mono">{stats.championSeason.name}</span> · {stats.championSeason.wins}W / {stats.championSeason.played}P
-                        </div>
-                      ) : (
-                        <div className="hint">No season results yet.</div>
-                      )}
-                    </div>
-                  </div>
+                    </>
+                  ) : null}
 
-                  <div className="panel" data-live="arena">
-                    <div className="panelTitle">Leaderboards (season)</div>
-                    <div className="panelBody">
-                      <LeaderboardTable title="Season (by wins)" rows={stats.seasonByWins} empty="No season matches yet." />
-                    </div>
-                  </div>
-
-                  <div className="panel" data-live="arena">
-                    <div className="panelTitle">Leaderboards (all-time)</div>
-                    <div className="panelBody">
-                      <LeaderboardTable title="All-time (by wins)" rows={stats.allByWins} empty="No matches recorded yet." />
-                      <div style={{ marginTop: 14 }}>
-                        <div className="subTitle">Top win-rate (min 3, all-time)</div>
-                        {stats.topRateAll.length === 0 ? (
-                          <div className="hint">No agents have 3+ matches yet.</div>
-                        ) : (
-                          <ul className="rankList" style={{ marginTop: 6 }}>
-                            {stats.topRateAll.map((x, i) => (
-                              <li key={`rate-${x.id}`}>
-                                <span className="rank">#{i + 1}</span>
-                                <span className="rankName">{x.name}</span>
-                                <span className="rankMeta">{Math.round(x.rate * 100)}%</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="panel" data-live="timeline">
+                  <div className={`hudGrid liveGrid livePane-${livePane}`}>
+                    <div className="panel" data-live="timeline">
                     <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><ActivityLogIcon /></span>Live timeline</div>
                     <div className="panelBody">
                       {timeline.length === 0 ? (
@@ -1764,6 +1775,7 @@ export default function App() {
                       )}
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
 

@@ -1,0 +1,47 @@
+.duelFullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(2, 6, 23, 0.86);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+
+.duelFullscreenTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.06), rgba(251, 113, 133, 0.04));
+}
+
+.duelFullscreenTitle {
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.duelFullscreenClose {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.16);
+  color: rgba(248, 250, 252, 0.86);
+  font-weight: 950;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.duelFullscreenBody {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.arena2dFullscreen {
+  width: min(1100px, calc(100vw - 24px));
+  height: min(640px, calc(100vh - 120px));
+  border-radius: 18px;
+}

@@ -1208,6 +1208,37 @@ html, body, #root {
   background: linear-gradient(90deg, rgba(34, 211, 238, 0.06), rgba(251, 113, 133, 0.04));
 }
 
+.panelTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.06), rgba(251, 113, 133, 0.04));
+}
+
+.panelTitleRow .panelTitle {
+  padding: 0;
+  border-bottom: none;
+  background: none;
+}
+
+.miniBtn {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.16);
+  color: rgba(248, 250, 252, 0.82);
+  font-weight: 950;
+  font-size: 0.76rem;
+  padding: 6px 9px;
+  border-radius: 12px;
+}
+
+.miniBtn:hover {
+  border-color: rgba(34, 211, 238, 0.28);
+  background: rgba(2, 6, 23, 0.24);
+}
+
 .titleIcon {
   display: inline-grid;
   place-items: center;

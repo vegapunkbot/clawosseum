@@ -18,6 +18,7 @@ import {
 import './App.css'
 import './game.css'
 import './tokenomics.css'
+import './fullscreen.css'
 
 type Agent = { id: string; name: string; llm?: string; createdAt: string }
 type MatchEvent = { t: string; type: string; message: string }
@@ -585,6 +586,7 @@ export default function App() {
   const [arenaMenuOpen, setArenaMenuOpen] = useState(false)
   const [livePane, setLivePane] = useState<'arena' | 'timeline' | 'roster' | 'matches'>('arena')
   const [presentMode, setPresentMode] = useState(false)
+  const [duelFullscreen, setDuelFullscreen] = useState(false)
 
   const [showArenaStats, setShowArenaStats] = useState(() => {
     try {
@@ -611,6 +613,15 @@ export default function App() {
     setArenaMenuOpen(false)
     setLivePane('arena')
   }, [view])
+
+  useEffect(() => {
+    if (!duelFullscreen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [duelFullscreen])
 
   const demoAgents: Agent[] = useMemo(() => {
     if (!demoOn) return []
@@ -1226,6 +1237,71 @@ export default function App() {
   return (
     <div className={`page ${view === 'arena' ? 'pageArena' : ''} ${presentMode ? 'presentMode' : ''}`}> 
       <main className="siteMain">
+      {duelFullscreen ? (
+        <div className="duelFullscreen" role="dialog" aria-label="Arena fullscreen">
+          <div className="duelFullscreenTop">
+            <div className="duelFullscreenTitle">Arena</div>
+            <button className="duelFullscreenClose" onClick={() => setDuelFullscreen(false)}>Close</button>
+          </div>
+          <div className="duelFullscreenBody">
+            {viz ? (
+              <div className={`arena2d arena2dFullscreen ${shakeOn ? 'shake' : ''}`} aria-label="2D battle arena">
+                <div className="arenaSky" />
+                <div className="arenaRim" />
+                <div className="arenaStands" />
+                <div className="arenaWalls" />
+                <div className="arenaStage" />
+                <div className="arenaStageLip" />
+                <div className="arenaHud">
+                  <div className={`hpBox hpA llm-${llmKey(agentsById.get(viz.a.id)?.llm)}`}>
+                    <div className="hpName">{viz.a.name}</div>
+                    <div className="hpBar"><div className="hpFill" style={{ width: `${viz.a.hp}%` }} /></div>
+                  </div>
+                  <div className={`hpBox hpB llm-${llmKey(agentsById.get(viz.b.id)?.llm)}`}>
+                    <div className="hpName">{viz.b.name}</div>
+                    <div className="hpBar"><div className="hpFill" style={{ width: `${viz.b.hp}%` }} /></div>
+                  </div>
+                </div>
+
+                {fx.announceText ? (
+                  <div key={fx.announceId} className={`arenaAnnounce ${fx.announceKind ?? ''}`} role="status">
+                    <div className="announceMain">{fx.announceText}</div>
+                    <div className="announceTags" aria-hidden="true">
+                      <span className={`announceTag llm-${llmKey(agentsById.get(viz.a.id)?.llm)}`}>{viz.a.name}</span>
+                      <span className="announceVs">vs</span>
+                      <span className={`announceTag llm-${llmKey(agentsById.get(viz.b.id)?.llm)}`}>{viz.b.name}</span>
+                    </div>
+                  </div>
+                ) : null}
+
+                {fx.sparkX != null ? <div key={fx.sparkId} className="spark" style={{ left: `${fx.sparkX}%` }} /> : null}
+
+                <div className={`fighterSprite spriteA state-${viz.a.state} llm-${llmKey(agentsById.get(viz.a.id)?.llm)}`} style={{ left: `${viz.a.x}%` }}>
+                  <div className="spriteTag" title={agentsById.get(viz.a.id)?.llm || ''}>
+                    <span className="tagName">{viz.a.name}</span>
+                    <span className="tagSep">·</span>
+                    <span className="tagLlm">{(agentsById.get(viz.a.id)?.llm || 'LLM').toUpperCase()}</span>
+                  </div>
+                  <img className="spriteImg" src={`/agents/llm-${llmKey(agentsById.get(viz.a.id)?.llm)}.png`} alt="" draggable={false} loading="eager" />
+                  <div className="spriteShadow" />
+                </div>
+                <div className={`fighterSprite spriteB state-${viz.b.state} llm-${llmKey(agentsById.get(viz.b.id)?.llm)}`} style={{ left: `${viz.b.x}%` }}>
+                  <div className="spriteTag" title={agentsById.get(viz.b.id)?.llm || ''}>
+                    <span className="tagName">{viz.b.name}</span>
+                    <span className="tagSep">·</span>
+                    <span className="tagLlm">{(agentsById.get(viz.b.id)?.llm || 'LLM').toUpperCase()}</span>
+                  </div>
+                  <img className="spriteImg" src={`/agents/llm-${llmKey(agentsById.get(viz.b.id)?.llm)}.png`} alt="" draggable={false} loading="eager" />
+                  <div className="spriteShadow" />
+                </div>
+              </div>
+            ) : (
+              <div className="hint">No match yet.</div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {view === 'landing' ? (
         <div className="landing">
           <div className="hero">
@@ -1882,7 +1958,10 @@ export default function App() {
                     <>
                       <div className="hudGrid duelGrid">
                         <div className="panel">
-                          <div className="panelTitle">Arena</div>
+                          <div className="panelTitleRow">
+                            <div className="panelTitle">Arena</div>
+                            <button className="miniBtn" onClick={() => setDuelFullscreen(true)} title="Full screen">Full screen</button>
+                          </div>
                           <div className="panelBody">
                             {viz ? (
                               <div className={`arena2d ${shakeOn ? 'shake' : ''}`} aria-label="2D battle arena">

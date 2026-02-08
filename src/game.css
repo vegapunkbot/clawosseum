@@ -542,24 +542,29 @@
 /* --- Arena stands (tessellated crowd) --- */
 .arenaStands {
   position: absolute;
-  left: -6%;
-  right: -6%;
-  top: -34px;
-  height: 148px;
+  left: -10%;
+  right: -10%;
+
+  /* sit just above the platform */
+  bottom: 106px;
+  height: 126px;
+
   transform: skewX(-8deg);
   pointer-events: none;
   z-index: 0;
 
   background-image: url('/arena-stands.jpg');
   background-repeat: repeat-x;
-  background-size: auto 148px;
-  background-position: center top;
+  background-size: auto 126px;
+  background-position: center bottom;
 
-  /* fade edges + keep HUD readable */
-  filter: saturate(0.95) contrast(1.05);
-  opacity: 0.55;
-  -webkit-mask-image: radial-gradient(closest-side at 50% 40%, rgba(0,0,0,1), rgba(0,0,0,0.15) 72%, rgba(0,0,0,0));
-  mask-image: radial-gradient(closest-side at 50% 40%, rgba(0,0,0,1), rgba(0,0,0,0.15) 72%, rgba(0,0,0,0));
+  /* keep readable but present */
+  filter: saturate(0.98) contrast(1.07);
+  opacity: 0.82;
+
+  /* gentle edge fade (less aggressive) */
+  -webkit-mask-image: radial-gradient(closest-side at 50% 65%, rgba(0,0,0,1), rgba(0,0,0,0.55) 78%, rgba(0,0,0,0));
+  mask-image: radial-gradient(closest-side at 50% 65%, rgba(0,0,0,1), rgba(0,0,0,0.55) 78%, rgba(0,0,0,0));
 }
 
 .arenaStands::after {
@@ -567,9 +572,11 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+
+  /* lighter shadowing; don't blank out the mid-field */
   background:
-    linear-gradient(180deg, rgba(2,6,23,0.70), rgba(2,6,23,0.12) 35%, rgba(2,6,23,0.0)),
-    radial-gradient(800px 220px at 50% 30%, rgba(34,211,238,0.10), transparent 60%),
-    radial-gradient(620px 260px at 90% 25%, rgba(251,113,133,0.09), transparent 62%);
+    linear-gradient(180deg, rgba(2,6,23,0.40), rgba(2,6,23,0.08) 40%, rgba(2,6,23,0.0)),
+    radial-gradient(800px 220px at 50% 55%, rgba(34,211,238,0.10), transparent 62%),
+    radial-gradient(620px 260px at 90% 55%, rgba(251,113,133,0.08), transparent 66%);
   mix-blend-mode: multiply;
 }

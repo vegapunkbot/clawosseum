@@ -539,6 +539,38 @@
   .victoryName { font-size: 1.14rem; }
 }
 
+/* --- Arena sky (above stands) --- */
+.arenaSky {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: -44px;
+  height: 190px;
+  transform: skewX(-8deg);
+  pointer-events: none;
+  z-index: 0;
+
+  background-image: url('/arena-sky.jpg');
+  background-repeat: repeat-x;
+  background-size: auto 190px;
+  background-position: center top;
+
+  opacity: 0.85;
+  filter: saturate(0.95) contrast(1.05);
+}
+
+.arenaSky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(2,6,23,0.45), rgba(2,6,23,0.12) 46%, rgba(2,6,23,0.0)),
+    radial-gradient(900px 260px at 50% 20%, rgba(167,139,250,0.10), transparent 60%),
+    radial-gradient(700px 260px at 20% 35%, rgba(34,211,238,0.08), transparent 62%);
+  mix-blend-mode: multiply;
+}
+
 /* --- Arena stands (tessellated crowd) --- */
 .arenaStands {
   position: absolute;

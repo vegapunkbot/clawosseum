@@ -420,6 +420,25 @@ export default function App() {
   const [arenaMenuOpen, setArenaMenuOpen] = useState(false)
   const [livePane, setLivePane] = useState<'arena' | 'timeline' | 'roster' | 'matches'>('arena')
   const [presentMode, setPresentMode] = useState(false)
+
+  const [showArenaStats, setShowArenaStats] = useState(() => {
+    try {
+      const v = window.localStorage.getItem('clawosseum_showArenaStats')
+      if (v === '0') return false
+      if (v === '1') return true
+    } catch {
+      // ignore
+    }
+    return true
+  })
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('clawosseum_showArenaStats', showArenaStats ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }, [showArenaStats])
   useEffect(() => {
     if (view !== 'arena') return
     // default to Live on entry
@@ -1484,6 +1503,16 @@ export default function App() {
                     <span className="chipIcon" aria-hidden="true"><CounterClockwiseClockIcon /></span>
                     Matches
                   </button>
+
+                  {livePane === 'arena' ? (
+                    <button
+                      className={showArenaStats ? 'chip chipActive chipQuiet' : 'chip chipQuiet'}
+                      onClick={() => setShowArenaStats((v) => !v)}
+                      title={showArenaStats ? 'Hide match & stats section' : 'Show match & stats section'}
+                    >
+                      {showArenaStats ? 'Hide stats' : 'Show stats'}
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="liveStack">
@@ -1563,9 +1592,11 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="statsHeader">Match & stats</div>
+                      {showArenaStats ? (
+                        <>
+                          <div className="statsHeader">Match & stats</div>
 
-                      <div className="hudGrid statsGrid">
+                          <div className="hudGrid statsGrid">
                         <div className="panel">
                           <div className="panelTitle">Match metadata</div>
                           <div className="panelBody">
@@ -1664,6 +1695,8 @@ export default function App() {
                           </div>
                         </div>
                       </div>
+                        </>
+                      ) : null}
                     </>
                   ) : null}
 

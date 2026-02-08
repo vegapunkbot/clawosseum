@@ -404,6 +404,12 @@ html, body, #root {
   box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.08) inset;
 }
 
+.chipQuiet {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.12);
+  color: rgba(248, 250, 252, 0.82);
+}
+
 .liveSubnav {
   display: flex;
   gap: 8px;

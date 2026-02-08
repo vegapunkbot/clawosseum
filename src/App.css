@@ -673,7 +673,7 @@ html, body, #root {
   left: 12px;
   right: 12px;
   top: 106px; /* leave room for topbar */
-  bottom: 170px; /* leave room for footer (mobile can be tall) */
+  bottom: 186px; /* leave room for footer + a little breathing room */
   width: auto;
   margin: 0;
 }

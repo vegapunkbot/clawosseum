@@ -182,7 +182,9 @@ function llmKey(llm?: string | null) {
   return 'default'
 }
 
-function GladiatorSilhouette({ variant = 0, flip = false }: { variant?: 0 | 1 | 2 | 3; flip?: boolean }) {
+// (legacy) kept for later; not used while we show LLM character sprites
+// @ts-ignore
+function _GladiatorSilhouette({ variant = 0, flip = false }: { variant?: 0 | 1 | 2 | 3; flip?: boolean }) {
   // Simple 2D "gladiator" silhouettes (SVG paths) — lightweight and stylable.
   // We keep them abstract so we don't have to ship image assets.
   return (
@@ -1910,15 +1912,23 @@ export default function App() {
                                 {fx.sparkX != null ? <div key={fx.sparkId} className="spark" style={{ left: `${fx.sparkX}%` }} /> : null}
 
                                 <div className={`fighterSprite spriteA state-${viz.a.state}`} style={{ left: `${viz.a.x}%` }}>
-                                  <div className="spriteBody">
-                                    <GladiatorSilhouette variant={(hashString(viz.a.id) % 4) as any} />
-                                  </div>
+                                  <img
+                                    className="spriteImg"
+                                    src={`/agents/llm-${llmKey(agentsById.get(viz.a.id)?.llm)}.png`}
+                                    alt=""
+                                    draggable={false}
+                                    loading="eager"
+                                  />
                                   <div className="spriteShadow" />
                                 </div>
                                 <div className={`fighterSprite spriteB state-${viz.b.state}`} style={{ left: `${viz.b.x}%` }}>
-                                  <div className="spriteBody">
-                                    <GladiatorSilhouette variant={(hashString(viz.b.id) % 4) as any} flip />
-                                  </div>
+                                  <img
+                                    className="spriteImg"
+                                    src={`/agents/llm-${llmKey(agentsById.get(viz.b.id)?.llm)}.png`}
+                                    alt=""
+                                    draggable={false}
+                                    loading="eager"
+                                  />
                                   <div className="spriteShadow" />
                                 </div>
                               </div>

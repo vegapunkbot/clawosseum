@@ -8,13 +8,15 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Ensure host ports are free (sometimes a dev node process is left running)
-if command -v sudo >/dev/null 2>&1; then
-  sudo fuser -k 5194/tcp 2>/dev/null || true
-  sudo fuser -k 5195/tcp 2>/dev/null || true
-else
-  fuser -k 5194/tcp 2>/dev/null || true
-  fuser -k 5195/tcp 2>/dev/null || true
-fi
+# Try multiple passes; occasionally the port is re-acquired immediately.
+KILL_CMD="fuser -k"
+if command -v sudo >/dev/null 2>&1; then KILL_CMD="sudo fuser -k"; fi
+
+for i in 1 2 3; do
+  $KILL_CMD 5194/tcp 2>/dev/null || true
+  $KILL_CMD 5195/tcp 2>/dev/null || true
+  sleep 0.2
+done
 
 # Web
 docker build -t clawosseum-web:local .

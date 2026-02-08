@@ -1111,18 +1111,31 @@ html, body, #root {
 
 .panel {
   border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(2, 6, 23, 0.28);
+  background: var(--panel);
   border-radius: 16px;
-  padding: 10px 12px;
+  overflow: hidden;
+  padding: 0;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.04) inset;
+}
+
+.panel:hover {
+  border-color: rgba(34, 211, 238, 0.34);
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.10) inset,
+    0 0 26px rgba(34, 211, 238, 0.10);
 }
 
 .panelTitle {
-  font-weight: 950;
-  font-size: 0.86rem;
-  opacity: 0.95;
-  display: inline-flex;
+  font-weight: 1000;
+  font-size: 0.82rem;
+  opacity: 0.98;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.06), rgba(251, 113, 133, 0.04));
 }
 
 .titleIcon {
@@ -1139,8 +1152,8 @@ html, body, #root {
 }
 
 .panelBody {
-  margin-top: 6px;
-  color: rgba(229, 231, 235, 0.78);
+  padding: 10px 12px 12px;
+  color: rgba(229, 231, 235, 0.80);
   font-weight: 650;
   font-size: 0.86rem;
 }
@@ -1401,12 +1414,11 @@ html, body, #root {
 .evtHighlight {
   border-radius: 14px;
   padding: 10px 10px;
-  border: 1px solid rgba(34, 211, 238, 0.18);
-  background:
-    radial-gradient(520px 200px at 15% 0%, rgba(34, 211, 238, 0.18), transparent 58%),
-    radial-gradient(520px 200px at 85% 0%, rgba(167, 139, 250, 0.14), transparent 62%),
-    rgba(2, 6, 23, 0.18);
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.05) inset;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.06) inset,
+    0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
 .evtHighlight-death {

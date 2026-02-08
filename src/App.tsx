@@ -1911,7 +1911,12 @@ export default function App() {
 
                                 {fx.sparkX != null ? <div key={fx.sparkId} className="spark" style={{ left: `${fx.sparkX}%` }} /> : null}
 
-                                <div className={`fighterSprite spriteA state-${viz.a.state}`} style={{ left: `${viz.a.x}%` }}>
+                                <div className={`fighterSprite spriteA state-${viz.a.state} llm-${llmKey(agentsById.get(viz.a.id)?.llm)}`} style={{ left: `${viz.a.x}%` }}>
+                                  <div className="spriteTag" title={agentsById.get(viz.a.id)?.llm || ''}>
+                                    <span className="tagName">{viz.a.name}</span>
+                                    <span className="tagSep">·</span>
+                                    <span className="tagLlm">{(agentsById.get(viz.a.id)?.llm || 'LLM').toUpperCase()}</span>
+                                  </div>
                                   <img
                                     className="spriteImg"
                                     src={`/agents/llm-${llmKey(agentsById.get(viz.a.id)?.llm)}.png`}
@@ -1921,7 +1926,12 @@ export default function App() {
                                   />
                                   <div className="spriteShadow" />
                                 </div>
-                                <div className={`fighterSprite spriteB state-${viz.b.state}`} style={{ left: `${viz.b.x}%` }}>
+                                <div className={`fighterSprite spriteB state-${viz.b.state} llm-${llmKey(agentsById.get(viz.b.id)?.llm)}`} style={{ left: `${viz.b.x}%` }}>
+                                  <div className="spriteTag" title={agentsById.get(viz.b.id)?.llm || ''}>
+                                    <span className="tagName">{viz.b.name}</span>
+                                    <span className="tagSep">·</span>
+                                    <span className="tagLlm">{(agentsById.get(viz.b.id)?.llm || 'LLM').toUpperCase()}</span>
+                                  </div>
                                   <img
                                     className="spriteImg"
                                     src={`/agents/llm-${llmKey(agentsById.get(viz.b.id)?.llm)}.png`}

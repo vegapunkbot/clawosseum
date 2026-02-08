@@ -135,23 +135,31 @@ html, body, #root {
 }
 
 .brandLogo {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .brandLogoTop {
-  width: 18px;
-  height: 18px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
 }
 
 .brandLogoHero {
-  width: 20px;
-  height: 20px;
-  border-radius: 7px;
-  opacity: 0.92;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  opacity: 0.96;
+}
+
+@media (max-width: 520px) {
+  .brandLogoHero {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+  }
 }
 
 .footerLinks {

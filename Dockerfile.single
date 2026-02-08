@@ -21,4 +21,5 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["node", "server/index.mjs"]
+# Ensure we don't accidentally leave a dev node process bound to PORT.
+CMD ["sh","-lc","fuser -k ${PORT}/tcp 2>/dev/null || true; node server/index.mjs"]

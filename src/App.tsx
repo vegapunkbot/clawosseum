@@ -327,6 +327,32 @@ function AgentBadge({ agentId, agentsById }: { agentId: string; agentsById: Map<
   )
 }
 
+function FighterCard({ agentId, agentsById }: { agentId: string; agentsById: Map<string, Agent> }) {
+  const a = agentsById.get(agentId)
+  const candidates = spriteCandidatesForAgent(a)
+  const [idx, setIdx] = useState(0)
+  useEffect(() => setIdx(0), [agentId, a?.llm])
+  const src = candidates[idx] || null
+
+  return (
+    <div className="fighterCard" title={agentId}>
+      {src ? (
+        <img
+          className="fighterAvatar"
+          src={src}
+          alt=""
+          loading="eager"
+          onError={() => setIdx((i) => i + 1)}
+        />
+      ) : (
+        <div className="fighterAvatar fighterAvatarFallback" aria-hidden="true" />
+      )}
+      <div className="fighterLlmLabel">{fmtLlm(a?.llm) ?? '—'}</div>
+      <div className="fighterNameLabel">{a?.name ?? agentId}</div>
+    </div>
+  )
+}
+
 function LeaderboardTable({ title, rows, empty }: { title: string; rows: LeaderRow[]; empty: string }) {
   return (
     <div>
@@ -1479,13 +1505,13 @@ export default function App() {
                     <span className="fightMeta">{matchMeta?.id ? `#${matchMeta.id.slice(0, 8)}` : ''}</span>
                   </div>
                   <div className="fightNames" aria-label="Current match">
-                    <span className="fightNameA">
-                      <AgentBadge agentId={fighters.aId} agentsById={agentsById} />
-                    </span>
-                    <span className="fightVs">VS</span>
-                    <span className="fightNameB">
-                      <AgentBadge agentId={fighters.bId} agentsById={agentsById} />
-                    </span>
+                    <div className="fightSide fightSideA">
+                      <FighterCard agentId={fighters.aId} agentsById={agentsById} />
+                    </div>
+                    <div className="fightVs">VS</div>
+                    <div className="fightSide fightSideB">
+                      <FighterCard agentId={fighters.bId} agentsById={agentsById} />
+                    </div>
                   </div>
                   <div className="fightBannerBottom">
                     <span className={`fightState ${activeMatch?.status === 'running' ? 'fightStateLive' : ''}`}>{matchLabel}</span>

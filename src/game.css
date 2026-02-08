@@ -64,34 +64,86 @@
   gap: 10px;
   padding: 10px 10px;
   border-radius: 14px;
-  background: rgba(2, 6, 23, 0.18);
+  background: var(--panel2);
   border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
-.fightNameA,
-.fightNameB {
-  font-weight: 1000;
-  font-size: 1.08rem;
-  text-transform: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.fightSide {
+  display: flex;
+  justify-content: center;
 }
 
-.fightNameA .agentBadge,
-.fightNameB .agentBadge {
-  flex-wrap: nowrap;
+.fighterCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 
-.fightNames .agentBadgeText {
-  max-width: 14ch;
+.fighterAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 6px;
+  object-fit: contain;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.40);
+}
+
+.fighterAvatarFallback {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.16), rgba(2, 6, 23, 0.20) 70%),
+    radial-gradient(circle at 70% 20%, rgba(251, 113, 133, 0.10), transparent 55%);
+}
+
+.fighterLlmLabel {
+  font-size: 0.72rem;
+  font-weight: 1000;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.fighterNameLabel {
+  font-size: 1.04rem;
+  font-weight: 1000;
+  color: rgba(248, 250, 252, 0.94);
+  max-width: 16ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.fightSideA .fighterNameLabel { color: rgba(34, 211, 238, 0.96); }
+.fightSideB .fighterNameLabel { color: rgba(251, 113, 133, 0.94); }
+
+@media (max-width: 520px) {
+  .fightNames {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .fightVs {
+    order: 2;
+    text-align: center;
+    font-size: 0.78rem;
+  }
+
+  .fightSideA { order: 1; }
+  .fightSideB { order: 3; }
+
+  .fighterAvatar {
+    width: 92px;
+    height: 92px;
+    border-radius: 22px;
+    padding: 8px;
+  }
+
+  .fighterLlmLabel { font-size: 0.76rem; }
+  .fighterNameLabel { font-size: 1.12rem; max-width: 20ch; }
 }
 
 .fightLlm {

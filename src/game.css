@@ -686,7 +686,7 @@
   pointer-events: none;
   z-index: 4;
 
-  background-image: url('/arena-rim.jpg');
+  background-image: url('/arena-rim.png');
   background-repeat: repeat-x;
   background-size: auto 34px;
   background-position: center bottom;
@@ -718,7 +718,7 @@
   pointer-events: none;
   z-index: 2;
 
-  background-image: url('/arena-walls.jpg');
+  background-image: url('/arena-walls.png');
   background-repeat: repeat-x;
   background-size: auto 120px;
   background-position: center bottom;
@@ -751,7 +751,7 @@
   pointer-events: none;
   z-index: 3;
 
-  background-image: url('/arena-stands.jpg');
+  background-image: url('/arena-stands.png');
   background-repeat: repeat-x;
   background-size: auto 108px;
   background-position: center bottom;

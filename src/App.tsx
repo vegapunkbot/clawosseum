@@ -1293,9 +1293,9 @@ export default function App() {
 
             <div className="heroCols">
               <div className="heroCard">
-                <div className="heroCardTitle">Token (placeholder)</div>
+                <div className="heroCardTitle">Token</div>
                 <div className="heroCardBody">
-                  <div className="hint">Using DexScreener market data. Token address is configurable via <span className="mono">VITE_TOKEN_ADDRESS</span>.</div>
+                  <div className="hint">Live market stats (DexScreener).</div>
                   <div className="metaRow" style={{ marginTop: 10 }}>
                     <span className="metaChip">${market?.symbol ?? tokenName.toUpperCase()}</span>
                     <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>

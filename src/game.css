@@ -386,6 +386,21 @@
   background: linear-gradient(90deg, rgba(34, 211, 238, 0.92), rgba(167, 139, 250, 0.78), rgba(251, 113, 133, 0.72));
 }
 
+/* LLM theming for HP + names (distinct per provider) */
+.hpBox.llm-gpt .hpName { color: rgba(34, 211, 238, 0.98); }
+.hpBox.llm-gpt .hpFill { background: linear-gradient(90deg, rgba(34,211,238,0.95), rgba(59,130,246,0.82)); }
+
+.hpBox.llm-claude .hpName { color: rgba(251, 191, 36, 0.98); }
+.hpBox.llm-claude .hpFill { background: linear-gradient(90deg, rgba(251,191,36,0.95), rgba(249,115,22,0.84)); }
+
+.hpBox.llm-gemini .hpName { color: rgba(34, 197, 94, 0.98); }
+.hpBox.llm-gemini .hpFill { background: linear-gradient(90deg, rgba(34,197,94,0.95), rgba(16,185,129,0.84)); }
+
+.hpBox.llm-grok .hpName { color: rgba(251, 113, 133, 0.98); }
+.hpBox.llm-grok .hpFill { background: linear-gradient(90deg, rgba(251,113,133,0.95), rgba(167,139,250,0.84)); }
+
+.hpBox.llm-default .hpName { color: rgba(248, 250, 252, 0.90); }
+
 .fighterSprite {
   position: absolute;
   bottom: 34px;

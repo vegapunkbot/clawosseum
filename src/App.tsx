@@ -172,6 +172,16 @@ function hashString(s: string) {
   return h >>> 0
 }
 
+function llmKey(llm?: string | null) {
+  const s = (llm || '').toLowerCase().trim()
+  if (!s) return 'default'
+  if (s.includes('claude')) return 'claude'
+  if (s.includes('gpt') || s.includes('openai')) return 'gpt'
+  if (s.includes('gemini')) return 'gemini'
+  if (s.includes('grok')) return 'grok'
+  return 'default'
+}
+
 function GladiatorSilhouette({ variant = 0, flip = false }: { variant?: 0 | 1 | 2 | 3; flip?: boolean }) {
   // Simple 2D "gladiator" silhouettes (SVG paths) — lightweight and stylable.
   // We keep them abstract so we don't have to ship image assets.
@@ -1881,11 +1891,11 @@ export default function App() {
                                 <div className="arenaStage" />
                                 <div className="arenaStageLip" />
                                 <div className="arenaHud">
-                                  <div className="hpBox hpA">
+                                  <div className={`hpBox hpA llm-${llmKey(agentsById.get(viz.a.id)?.llm)}`}>
                                     <div className="hpName">{viz.a.name}</div>
                                     <div className="hpBar"><div className="hpFill" style={{ width: `${viz.a.hp}%` }} /></div>
                                   </div>
-                                  <div className="hpBox hpB">
+                                  <div className={`hpBox hpB llm-${llmKey(agentsById.get(viz.b.id)?.llm)}`}>
                                     <div className="hpName">{viz.b.name}</div>
                                     <div className="hpBar"><div className="hpFill" style={{ width: `${viz.b.hp}%` }} /></div>
                                   </div>

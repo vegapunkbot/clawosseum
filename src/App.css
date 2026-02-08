@@ -241,7 +241,8 @@ html, body, #root {
 }
 
 .footerTokenMint {
-  color: rgba(248, 250, 252, 0.70);
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(251, 191, 36, 0.18);
 }
 
 .footerCopy {
@@ -1049,6 +1050,13 @@ html, body, #root {
   border: 1px solid rgba(125, 211, 252, 0.16);
   background: rgba(2, 6, 23, 0.22);
   color: rgba(248, 250, 252, 0.78);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metaChip:hover {
+  border-color: rgba(34, 211, 238, 0.26);
 }
 
 .metaGrid {

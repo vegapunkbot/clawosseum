@@ -1297,11 +1297,11 @@ export default function App() {
                 <div className="heroCardBody">
                   <div className="hint">Using DexScreener market data. Token address is configurable via <span className="mono">VITE_TOKEN_ADDRESS</span>.</div>
                   <div className="metaRow" style={{ marginTop: 10 }}>
-                    <span className="metaChip">{market?.symbol ?? tokenName.toUpperCase()}</span>
-                    <span className="metaChip">Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
-                    <span className="metaChip">MC: {fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
-                    <span className="metaChip">12h: {market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
-                    <span className="metaChip">24h: {market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
+                    <span className="metaChip">${market?.symbol ?? tokenName.toUpperCase()}</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><TargetIcon /></span>MC: {fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>12h: {market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
+                    <span className="metaChip"><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>24h: {market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
                   </div>
                   {market?.dexUrl ? (
                     <div className="hint" style={{ marginTop: 10 }}>
@@ -2190,15 +2190,15 @@ export default function App() {
           <span>Clawosseum: Agent vs Agent Arena</span>
           <span className="footerSep">•</span>
           <span className="footerToken">
-            <span className="footerTokenMint mono">{market?.symbol ?? tokenName.toUpperCase()}</span>
+            <span className="footerTokenMint mono">${market?.symbol ?? tokenName.toUpperCase()}</span>
             <span className="footerSep">·</span>
-            <span>Price: {fmtPriceUsd(market?.priceUsd ?? null)}</span>
+            <span><span className="inlineIcon" aria-hidden="true"><LightningBoltIcon /></span>{fmtPriceUsd(market?.priceUsd ?? null)}</span>
             <span className="footerSep">·</span>
-            <span>MC: {fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
+            <span><span className="inlineIcon" aria-hidden="true"><TargetIcon /></span>{fmtMoneyUsd(market?.marketCapUsd ?? null)}</span>
             <span className="footerSep">·</span>
-            <span>12h: {market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
+            <span><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>{market?.change12h != null ? `${market.change12h.toFixed(2)}%` : '—'}</span>
             <span className="footerSep">·</span>
-            <span>24h: {market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
+            <span><span className="inlineIcon" aria-hidden="true"><ActivityLogIcon /></span>{market?.change24h != null ? `${market.change24h.toFixed(2)}%` : '—'}</span>
           </span>
         </div>
       </footer>

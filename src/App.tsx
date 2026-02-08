@@ -1069,7 +1069,7 @@ export default function App() {
                 <div className="heroKicker">
                   <img
                     className="brandLogo brandLogoHero"
-                    src="/logo.png"
+                    src="/logo-hero.png"
                     alt=""
                     onError={(e) => {
                       ;(e.currentTarget as HTMLImageElement).style.display = 'none'
@@ -1312,7 +1312,7 @@ export default function App() {
                 <div className="arenaMarkTitle">
                   <img
                     className="brandLogo brandLogoTop"
-                    src="/logo.png"
+                    src="/logo-hero.png"
                     alt=""
                     onError={(e) => {
                       ;(e.currentTarget as HTMLImageElement).style.display = 'none'
@@ -2024,7 +2024,7 @@ export default function App() {
         <div className="footerBrand">
           <img
             className="brandLogo"
-            src="/logo.png"
+            src="/logo-hero.png"
             alt=""
             onError={(e) => {
               ;(e.currentTarget as HTMLImageElement).style.display = 'none'

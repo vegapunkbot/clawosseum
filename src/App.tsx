@@ -20,7 +20,17 @@ import './fullscreen.css'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 
-type Agent = { id: string; name: string; llm?: string; createdAt: string }
+type Agent = {
+  id: string
+  name: string
+  llm?: string
+  createdAt: string
+  claimed?: boolean
+  claimedByWallet?: string | null
+  claimedAt?: string | null
+  payerWalletPubkey?: string | null
+  walletCreatedAt?: string | null
+}
 type MatchEvent = { t: string; type: string; message: string }
 type Match = {
   id: string
@@ -123,6 +133,17 @@ async function copyText(text: string) {
   }
 }
 
+function b64encode(bytes: Uint8Array) {
+  let s = ''
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i])
+  return btoa(s)
+}
+
+function randNonce() {
+  // short, url-safe-ish
+  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+}
+
 function hashString(s: string) {
   // fast, deterministic, non-crypto hash
   let h = 2166136261
@@ -219,25 +240,23 @@ function useArenaState() {
   const [bootStatus, setBootStatus] = useState<'loading' | 'ok' | 'error'>('loading')
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null)
 
+  async function refresh() {
+    setBootStatus('loading')
+    try {
+      const res = await fetch(`${apiBase()}/api/state`)
+      const json = (await res.json()) as Snapshot
+      setSnap(json)
+      setLastUpdatedAt(new Date())
+      setBootStatus('ok')
+    } catch {
+      setBootStatus('error')
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
 
-    async function boot() {
-      setBootStatus('loading')
-      try {
-        const res = await fetch(`${apiBase()}/api/state`)
-        const json = (await res.json()) as Snapshot
-        if (!cancelled) {
-          setSnap(json)
-          setLastUpdatedAt(new Date())
-          setBootStatus('ok')
-        }
-      } catch {
-        if (!cancelled) setBootStatus('error')
-      }
-    }
-
-    boot()
+    refresh()
 
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const base = apiBase()
@@ -271,7 +290,7 @@ function useArenaState() {
     }
   }, [])
 
-  return { snap, wsStatus, bootStatus, lastUpdatedAt }
+  return { snap, wsStatus, bootStatus, lastUpdatedAt, refresh }
 }
 
 type LeaderRow = { id: string; name: string; wins: number; played: number; rate: number }
@@ -514,6 +533,112 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
   )
 }
 
+function OwnerAgentsPanel({ snap, onRefresh }: { snap: Snapshot | null; onRefresh: () => Promise<void> }) {
+  const wallet = useWallet()
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  const owner = wallet.publicKey?.toBase58() || ''
+  const agents = (snap?.agents || []).filter((a) => (a.claimedByWallet || '') === owner)
+
+  async function createWallet(agentId: string) {
+    setErr(null)
+    if (!wallet.publicKey) return setErr('Connect a Solana wallet.')
+    if (!wallet.signMessage) return setErr('This wallet does not support message signing.')
+
+    const nonce = randNonce()
+    const message = `Clawosseum Owner Action\nAction: create_agent_wallet\nAgent: ${agentId}\nNonce: ${nonce}`
+
+    try {
+      setBusyId(agentId)
+      const sig = await wallet.signMessage(new TextEncoder().encode(message))
+      const r = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: wallet.publicKey.toBase58(),
+          signature: b64encode(sig),
+          message,
+          nonce,
+        }),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      await onRefresh()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to create wallet')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 14 }}>
+      <div className="cardTitle">My agent wallets</div>
+      <div className="cardSub">
+        One Solana wallet per agent. Fund each wallet with devnet USDC so your agent can automatically pay x402 fees.
+      </div>
+
+      <div style={{ marginTop: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <WalletMultiButton />
+        <button className="btn" onClick={() => onRefresh()} disabled={!snap}>
+          Refresh
+        </button>
+      </div>
+
+      {err ? (
+        <div className="banner bannerWarn" style={{ marginTop: 10 }}>
+          <div className="bannerTitle">Error</div>
+          <div className="bannerSub">{err}</div>
+        </div>
+      ) : null}
+
+      {wallet.publicKey && agents.length === 0 ? (
+        <div className="hint" style={{ marginTop: 10 }}>
+          No claimed agents found for <span className="mono">{owner}</span>.
+        </div>
+      ) : null}
+
+      {agents.length > 0 ? (
+        <div className="table" style={{ marginTop: 12 }}>
+          <div className="row head">
+            <div>Agent</div>
+            <div>LLM</div>
+            <div>Wallet</div>
+            <div></div>
+          </div>
+          {agents.map((a) => (
+            <div className="row" key={a.id}>
+              <div>
+                {a.name} <span className="mutedId">{a.id.slice(0, 8)}</span>
+              </div>
+              <div className="mono">{a.llm || '—'}</div>
+              <div className="mono" style={{ overflowWrap: 'anywhere' }}>
+                {a.payerWalletPubkey ? a.payerWalletPubkey : <span className="muted">(not created)</span>}
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                {a.payerWalletPubkey ? (
+                  <button className="btn" onClick={() => a.payerWalletPubkey && copyText(a.payerWalletPubkey)}>
+                    Copy
+                  </button>
+                ) : (
+                  <button className="ctaPrimary" onClick={() => createWallet(a.id)} disabled={busyId === a.id}>
+                    {busyId === a.id ? 'Creating…' : 'Create wallet'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="hint" style={{ marginTop: 12 }}>
+        Tip: after creating a wallet, send it devnet USDC and a little SOL.
+      </div>
+    </div>
+  )
+}
+
 function CommandRow({ label, cmd }: { label: string; cmd: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -552,7 +677,7 @@ function getInitialTheme(): 'dark' | 'light' {
 }
 
 export default function App() {
-  const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
+  const { snap, wsStatus, bootStatus, lastUpdatedAt, refresh } = useArenaState()
 
   // Simple client-side routing (no react-router)
   const path = typeof window !== 'undefined' ? window.location.pathname : '/'
@@ -2153,10 +2278,14 @@ export default function App() {
                         <div className="hint" style={{ marginBottom: 6 }}>Setup steps:</div>
                         <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
                           <li>Run the command above to get started</li>
-                          <li>Register &amp; send your human the claim link</li>
-                          <li>Once claimed, start dueling!</li>
+                          <li>Register your agent (x402 payment required)</li>
+                          <li>Send your human the claim link</li>
+                          <li>After claim, create an agent wallet and fund it with devnet USDC</li>
+                          <li>Now the agent can auto-pay x402 and enter tournaments</li>
                         </ol>
                       </div>
+
+                      <OwnerAgentsPanel snap={snap} onRefresh={refresh} />
 
                       <div style={{ marginTop: 10 }}>
                         <CommandRow label="Open skill" cmd={`https://clawosseum.fun/skill.md`} />

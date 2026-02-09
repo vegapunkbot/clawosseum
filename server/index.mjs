@@ -11,6 +11,7 @@ import { nanoid } from 'nanoid'
 import { MongoClient, ObjectId } from 'mongodb'
 import nacl from 'tweetnacl'
 import { PublicKey } from '@solana/web3.js'
+import crypto from 'node:crypto'
 
 // x402 (optional)
 // Coinbase x402 middleware is kept for some legacy endpoints.
@@ -448,6 +449,16 @@ function findClaim(token) {
 
 // ---- security defaults ----
 const JWT_SECRET = (process.env.ARENA_JWT_SECRET || process.env.JWT_SECRET || '').trim()
+
+// Privy (optional): server-side wallet creation + signing
+const PRIVY_APP_ID = (process.env.PRIVY_APP_ID || '').trim()
+const PRIVY_APP_SECRET = (process.env.PRIVY_APP_SECRET || '').trim()
+const privyAuthHeader = () => {
+  if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) return null
+  const basic = Buffer.from(`${PRIVY_APP_ID}:${PRIVY_APP_SECRET}`).toString('base64')
+  return { Authorization: `Basic ${basic}`, 'privy-app-id': PRIVY_APP_ID }
+}
+
 const jwtRequired = (req, res, next) => {
   if (!JWT_SECRET) return res.status(500).json({ ok: false, error: 'server missing JWT secret' })
   const auth = (req.headers.authorization || '').toString()
@@ -732,6 +743,90 @@ app.post('/api/v1/claim/verify', authLimiter, (req, res) => {
 
 app.get('/api/agents', (_req, res) => {
   res.json({ ok: true, agents: state.agents })
+})
+
+// ---- owner agent management (Privy wallets) ----
+// Message format for owner-signed management actions.
+function getOwnerManageMessage({ action, agentId, nonce }) {
+  return `Clawosseum Owner Action\nAction: ${action}\nAgent: ${agentId}\nNonce: ${nonce}`
+}
+
+app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const nonce = (req.body?.nonce || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
+  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
+  if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== ownerPublicKeyStr) {
+    return res.status(403).json({ ok: false, error: 'only the claiming wallet can create an agent wallet' })
+  }
+
+  // Verify signed message
+  const expectedMessage = getOwnerManageMessage({ action: 'create_agent_wallet', agentId, nonce })
+  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
+
+  let pkBytes
+  try {
+    pkBytes = new PublicKey(ownerPublicKeyStr).toBytes()
+  } catch {
+    return res.status(400).json({ ok: false, error: 'invalid publicKey' })
+  }
+
+  let sigBytes
+  try {
+    sigBytes = b64decode(signatureB64)
+  } catch {
+    return res.status(400).json({ ok: false, error: 'invalid signature encoding' })
+  }
+
+  const ok = nacl.sign.detached.verify(new TextEncoder().encode(expectedMessage), sigBytes, pkBytes)
+  if (!ok) return res.status(401).json({ ok: false, error: 'invalid signature' })
+
+  if (agent.privyWalletId && agent.payerWalletPubkey) {
+    return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey, existed: true })
+  }
+
+  const headers = privyAuthHeader()
+  if (!headers) return res.status(500).json({ ok: false, error: 'server missing Privy credentials' })
+
+  try {
+    const idempotencyKey = crypto.randomUUID()
+    const r = await fetch('https://api.privy.io/v1/wallets', {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'content-type': 'application/json',
+        'privy-idempotency-key': idempotencyKey,
+      },
+      body: JSON.stringify({ chain_type: 'solana' }),
+    })
+
+    const out = await r.json().catch(() => null)
+    if (!r.ok) {
+      return res.status(502).json({ ok: false, error: `privy create wallet failed (${r.status})`, detail: out })
+    }
+
+    agent.privyWalletId = out.id
+    agent.payerWalletPubkey = out.address
+    agent.walletCreatedAt = now()
+
+    saveStateSoon()
+    broadcast({ type: 'agents', payload: state.agents })
+    broadcast({ type: 'state', payload: snapshot() })
+
+    return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || 'privy wallet create error' })
+  }
 })
 
 // ---- tournaments (WIP) ----

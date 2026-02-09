@@ -9,6 +9,8 @@ import jwt from 'jsonwebtoken'
 import { WebSocketServer } from 'ws'
 import { nanoid } from 'nanoid'
 import { MongoClient, ObjectId } from 'mongodb'
+import nacl from 'tweetnacl'
+import { PublicKey } from '@solana/web3.js'
 
 // x402 (optional)
 // Coinbase x402 middleware is kept for some legacy endpoints.
@@ -16,9 +18,6 @@ import { paymentMiddleware } from '@x402/express'
 import { x402ResourceServer, HTTPFacilitatorClient } from '@x402/core/server'
 import { registerExactEvmScheme } from '@x402/evm/exact/server'
 import { registerExactSvmScheme } from '@x402/svm/exact/server'
-
-// Faremeter middleware (Corbits-compatible 402 body + X-PAYMENT retry)
-import { createMiddleware as createFaremeterMiddleware } from '@faremeter/middleware/express'
 
 const PORT = Number(process.env.PORT || 5195)
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data')
@@ -76,7 +75,8 @@ async function mongoSaveMatchResult(match) {
   await db.collection('match_results').insertOne(doc)
 }
 
-/** @typedef {{ id: string, name: string, createdAt: string }} Agent */
+/** @typedef {{ id: string, name: string, llm?: string, createdAt: string, claimed?: boolean, claimedByWallet?: string|null, claimedAt?: string|null }} Agent */
+/** @typedef {{ id: string, token: string, agentId: string, status: 'pending'|'claimed'|'expired', nonce: string, issuedAt: string, expiresAt: string, claimedByWallet?: string|null }} Claim */
 /** @typedef {{ t: string, type: string, message: string }} MatchEvent */
 /** @typedef {{ id: string, status: 'idle'|'running'|'complete', agents: string[], winnerId?: string, startedAt?: string, endedAt?: string, problemId?: string|null, problemPrompt?: string|null, events: MatchEvent[] }} Match */
 
@@ -101,6 +101,7 @@ function loadState() {
 
     return {
       agents: Array.isArray(parsed.agents) ? parsed.agents : [],
+      claims: Array.isArray(parsed.claims) ? parsed.claims : [],
       matches: Array.isArray(parsed.matches) ? parsed.matches : [],
       currentMatchId: typeof parsed.currentMatchId === 'string' ? parsed.currentMatchId : null,
 
@@ -147,6 +148,7 @@ function loadState() {
   } catch {
     return {
       agents: [],
+      claims: [],
       matches: [],
       currentMatchId: null,
 
@@ -386,6 +388,64 @@ if (fs.existsSync(DIST_DIR)) {
   app.use(express.static(DIST_DIR))
 }
 
+// ---- claim config ----
+const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://clawosseum.fun').trim()
+const CLAIM_TTL_MS = Number(process.env.CLAIM_TTL_MS || 24 * 60 * 60_000) // 24h
+
+function b64encode(bytes) {
+  return Buffer.from(bytes).toString('base64')
+}
+function b64decode(s) {
+  return new Uint8Array(Buffer.from(String(s || ''), 'base64'))
+}
+
+function getClaimMessage(claim) {
+  // Simple, explicit message. Domain binding + TTL + nonce prevents replay across origins.
+  return [
+    'CLAWOSSEUM WALLET CLAIM',
+    `origin: ${SITE_ORIGIN}`,
+    'cluster: solana-devnet',
+    `claim: ${claim.token}`,
+    `nonce: ${claim.nonce}`,
+    `issuedAt: ${claim.issuedAt}`,
+    `expiresAt: ${claim.expiresAt}`,
+    '',
+    'By signing, you prove you are the human controller of this agent.',
+  ].join('\n')
+}
+
+function getOrCreateAgentByName(name, llm) {
+  const existing = state.agents.find((a) => a.name.toLowerCase() === name.toLowerCase())
+  if (existing) {
+    if (llm && (!existing.llm || existing.llm !== llm)) existing.llm = llm
+    return existing
+  }
+  const agent = { id: nanoid(10), name, llm, createdAt: now(), claimed: false, claimedByWallet: null, claimedAt: null }
+  state.agents.push(agent)
+  return agent
+}
+
+function createClaimForAgent(agentId) {
+  const issuedAt = new Date()
+  const expiresAt = new Date(issuedAt.getTime() + CLAIM_TTL_MS)
+  const claim = {
+    id: nanoid(10),
+    token: `claw_claim_${nanoid(24)}`,
+    agentId,
+    status: 'pending',
+    nonce: nanoid(12),
+    issuedAt: issuedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    claimedByWallet: null,
+  }
+  state.claims.push(claim)
+  return claim
+}
+
+function findClaim(token) {
+  return state.claims.find((c) => c.token === token) || null
+}
+
 // ---- security defaults ----
 const JWT_SECRET = (process.env.ARENA_JWT_SECRET || process.env.JWT_SECRET || '').trim()
 const jwtRequired = (req, res, next) => {
@@ -440,15 +500,6 @@ function parseUsdToMinorUnits(priceStr, decimals) {
   return String(Math.round(n * scale))
 }
 
-function normalizeX402NetworkForFaremeter(network) {
-  // PayAI + Corbits typically use v1-style names like "solana-devnet".
-  // Our user-facing config may use CAIP-2 ("solana:...").
-  if (typeof network !== 'string') return network
-  if (network === 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1') return 'solana-devnet'
-  if (network === 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp') return 'solana'
-  if (network.startsWith('solana:')) return 'solana' // conservative fallback
-  return network
-}
 const X402_FACILITATOR_URL = (process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator').trim()
 
 let x402Server = null
@@ -456,6 +507,7 @@ if (X402_ENABLED) {
   if (!X402_PAY_TO) {
     console.warn('[x402] X402_ENABLED=1 but X402_PAY_TO is not set; x402 will be disabled')
   } else {
+    try {
     const facilitatorClient = new HTTPFacilitatorClient({ url: X402_FACILITATOR_URL })
     x402Server = new x402ResourceServer(facilitatorClient)
 
@@ -469,58 +521,26 @@ if (X402_ENABLED) {
       registerExactEvmScheme(x402Server)
     }
 
-    // Require payment for internet-facing actions.
-    // We use Faremeter middleware for the pay-to-register flow so that Corbits tooling
-    // (e.g. @faremeter/rides) can handle 402 responses + X-PAYMENT retries automatically.
-    //
-    // NOTE: we still keep the Coinbase x402 middleware available for other endpoints,
-    // but do not use it for /api/v1/auth/register.
+    // Require payment for internet-facing actions (x402)
+    // Gate BOTH register + tournament-enter via the Coinbase x402 middleware using the configured facilitator.
+    // This keeps the server aligned with standard x402 facilitator endpoints (/supported, /verify, /settle).
 
-    const registerMinor = parseUsdToMinorUnits(X402_REGISTER_PRICE, 6)
-    if (!registerMinor) {
-      console.warn('[x402] invalid X402_REGISTER_PRICE; pay-to-register disabled')
-    } else {
-      const facilitatorNetwork = normalizeX402NetworkForFaremeter(X402_NETWORK)
-      const usdcMint =
-        facilitatorNetwork === 'solana-devnet'
-          ? '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' // USDC devnet mint
-          : 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // USDC mainnet mint
-
-      const registerGate = await createFaremeterMiddleware({
-        facilitatorURL: X402_FACILITATOR_URL,
-        // Faremeter expects a list (or list-of-lists) of acceptable payment options
-        accepts: [
-          [
-            {
-              scheme: 'exact',
-              network: facilitatorNetwork,
-              asset: usdcMint,
-              payTo: X402_PAY_TO,
-              maxAmountRequired: registerMinor,
-              maxTimeoutSeconds: 120,
-              resource: '', // middleware fills with request URL
-              description: 'Register an agent (issues a JWT).',
-              mimeType: 'application/json',
-            },
-          ],
-        ],
-      })
-
-      app.post('/api/v1/auth/register', async (req, res, next) => {
-        try {
-          return await registerGate(req, res, next)
-        } catch (e) {
-          // Never crash the whole API because the facilitator is down/misconfigured.
-          console.error('[x402] registerGate failed:', e)
-          return res.status(503).json({ ok: false, error: 'payments unavailable' })
-        }
-      })
-    }
-
-    // Tournament entry is still Coinbase x402-gated for now.
     app.use(
       paymentMiddleware(
         {
+          'POST /api/v1/auth/register': {
+            accepts: [
+              {
+                scheme: 'exact',
+                price: X402_REGISTER_PRICE,
+                network: X402_NETWORK,
+                payTo: X402_PAY_TO,
+              },
+            ],
+            description: 'Register an agent (issues a JWT).',
+            mimeType: 'application/json',
+          },
+
           'POST /api/tournament-enter': {
             accepts: [
               {
@@ -541,6 +561,10 @@ if (X402_ENABLED) {
     console.log(
       `[x402] enabled: facilitator=${X402_FACILITATOR_URL} network=${X402_NETWORK} registerPrice=${X402_REGISTER_PRICE} entryPrice=${X402_ENTRY_PRICE}`,
     )
+    } catch (e) {
+      console.error('[x402] init failed; continuing without payments:', e)
+      x402Server = null
+    }
   }
 }
 
@@ -569,9 +593,128 @@ app.post('/api/v1/auth/register', authLimiter, (req, res) => {
   if (!name || name.length > 64) return res.status(400).json({ ok: false, error: 'name required (<=64 chars)' })
   if (!llm || llm.length > 32) return res.status(400).json({ ok: false, error: 'llm required (<=32 chars)' })
 
-  // NOTE: for now, registration is permissionless. For production, add human-claim / allowlists.
+  // NOTE: for now, registration is permissionless. For production, add allowlists and require a claimed wallet.
   const token = jwt.sign({ sub: name, name, llm }, JWT_SECRET, { expiresIn: '30d' })
-  res.json({ ok: true, token, agent: { id: name.toLowerCase(), name, llm } })
+
+  // Ensure the agent exists in arena state and mint a wallet-claim token.
+  const agent = getOrCreateAgentByName(name, llm)
+  const claim = createClaimForAgent(agent.id)
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  res.json({
+    ok: true,
+    token,
+    agent,
+    claim: {
+      token: claim.token,
+      expiresAt: claim.expiresAt,
+      url: `${SITE_ORIGIN.replace(/\/$/, '')}/claim/${encodeURIComponent(claim.token)}`,
+    },
+  })
+})
+
+// ---- wallet-claim endpoints (public; signature-gated) ----
+app.post('/api/v1/claim/create', authLimiter, (req, res) => {
+  const name = (req.body?.name || '').toString().trim()
+  const llm = (req.body?.llm || '').toString().trim()
+  if (!name || name.length > 64) return res.status(400).json({ ok: false, error: 'name required (<=64 chars)' })
+  if (llm && llm.length > 32) return res.status(400).json({ ok: false, error: 'llm too long (<=32 chars)' })
+
+  const agent = getOrCreateAgentByName(name, llm)
+  const claim = createClaimForAgent(agent.id)
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  res.json({
+    ok: true,
+    agent,
+    claim: {
+      token: claim.token,
+      expiresAt: claim.expiresAt,
+      url: `${SITE_ORIGIN.replace(/\/$/, '')}/claim/${encodeURIComponent(claim.token)}`,
+    },
+  })
+})
+
+app.post('/api/v1/claim/message', authLimiter, (req, res) => {
+  const claimToken = (req.body?.claimToken || '').toString().trim()
+  if (!claimToken) return res.status(400).json({ ok: false, error: 'claimToken required' })
+
+  const claim = findClaim(claimToken)
+  if (!claim) return res.status(404).json({ ok: false, error: 'claim not found' })
+
+  // Expire lazily
+  if (claim.status === 'pending' && Date.now() > Date.parse(claim.expiresAt)) {
+    claim.status = 'expired'
+    saveStateSoon()
+  }
+
+  if (claim.status !== 'pending') return res.status(409).json({ ok: false, error: `claim is ${claim.status}` })
+
+  res.json({ ok: true, message: getClaimMessage(claim), expiresAt: claim.expiresAt })
+})
+
+app.post('/api/v1/claim/verify', authLimiter, (req, res) => {
+  const claimToken = (req.body?.claimToken || '').toString().trim()
+  const publicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+
+  if (!claimToken) return res.status(400).json({ ok: false, error: 'claimToken required' })
+  if (!publicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
+  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
+
+  const claim = findClaim(claimToken)
+  if (!claim) return res.status(404).json({ ok: false, error: 'claim not found' })
+
+  // Expire lazily
+  if (claim.status === 'pending' && Date.now() > Date.parse(claim.expiresAt)) {
+    claim.status = 'expired'
+    saveStateSoon()
+  }
+
+  if (claim.status !== 'pending') return res.status(409).json({ ok: false, error: `claim is ${claim.status}` })
+
+  const expectedMessage = getClaimMessage(claim)
+  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
+
+  let pkBytes
+  try {
+    pkBytes = new PublicKey(publicKeyStr).toBytes()
+  } catch {
+    return res.status(400).json({ ok: false, error: 'invalid publicKey' })
+  }
+
+  let sigBytes
+  try {
+    sigBytes = b64decode(signatureB64)
+  } catch {
+    return res.status(400).json({ ok: false, error: 'invalid signature encoding' })
+  }
+
+  const ok = nacl.sign.detached.verify(new TextEncoder().encode(expectedMessage), sigBytes, pkBytes)
+  if (!ok) return res.status(401).json({ ok: false, error: 'invalid signature' })
+
+  claim.status = 'claimed'
+  claim.claimedByWallet = publicKeyStr
+
+  const agent = state.agents.find((a) => a.id === claim.agentId)
+  if (agent) {
+    agent.claimed = true
+    agent.claimedByWallet = publicKeyStr
+    agent.claimedAt = now()
+  }
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  res.json({ ok: true, claimed: true, agent })
 })
 
 app.get('/api/agents', (_req, res) => {

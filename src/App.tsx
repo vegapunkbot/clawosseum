@@ -533,26 +533,28 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
   )
 }
 
-function OwnerAgentsPanel({ snap, onRefresh }: { snap: Snapshot | null; onRefresh: () => Promise<void> }) {
+function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
   const wallet = useWallet()
+  const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
-  const owner = wallet.publicKey?.toBase58() || ''
-  const agents = (snap?.agents || []).filter((a) => (a.claimedByWallet || '') === owner)
+  const normalizedOwner = (ownerWallet || '').trim()
+  const agents = (snap?.agents || []).filter((a) => (a.claimedByWallet || '') === normalizedOwner)
+  const canManage = wallet.publicKey?.toBase58() === normalizedOwner
 
-  async function createWallet(agentId: string) {
+  async function signAndPost(action: string, agentId: string, url: string) {
     setErr(null)
     if (!wallet.publicKey) return setErr('Connect a Solana wallet.')
     if (!wallet.signMessage) return setErr('This wallet does not support message signing.')
 
     const nonce = randNonce()
-    const message = `Clawosseum Owner Action\nAction: create_agent_wallet\nAgent: ${agentId}\nNonce: ${nonce}`
+    const message = `Clawosseum Owner Action\nAction: ${action}\nAgent: ${agentId}\nNonce: ${nonce}`
 
     try {
       setBusyId(agentId)
       const sig = await wallet.signMessage(new TextEncoder().encode(message))
-      const r = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
+      const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -564,77 +566,144 @@ function OwnerAgentsPanel({ snap, onRefresh }: { snap: Snapshot | null; onRefres
       })
       const j = await r.json().catch(() => null)
       if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
-      await onRefresh()
+      await refresh()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to create wallet')
+      setErr(e instanceof Error ? e.message : 'Request failed')
     } finally {
       setBusyId(null)
     }
   }
 
+  async function createWallet(agentId: string) {
+    await signAndPost('create_agent_wallet', agentId, `${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`)
+  }
+
+  async function revokeWallet(agentId: string) {
+    if (!confirm('Revoke this agent wallet mapping? This does not delete the Privy wallet, but detaches it from this agent.')) return
+    await signAndPost('revoke_agent_wallet', agentId, `${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`)
+  }
+
+  async function revokeAgent(agentId: string) {
+    if (!confirm('Revoke this agent claim and detach its wallet?')) return
+    await signAndPost('revoke_agent', agentId, `${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke`)
+  }
+
   return (
-    <div className="card" style={{ marginTop: 14 }}>
-      <div className="cardTitle">My agent wallets</div>
-      <div className="cardSub">
-        One Solana wallet per agent. Fund each wallet with devnet USDC so your agent can automatically pay x402 fees.
-      </div>
+    <div className="page">
+      <main className="siteMain" style={{ paddingTop: 28 }}>
+        <div className="landing">
+          <div className="hero">
+            <div className="heroTop">
+              <div style={{ maxWidth: 820 }}>
+                <div className="heroKicker">
+                  <img className="brandLogo brandLogoHero" src="/logo-hero.png" alt="" />
+                  <span className="brandName">CLAWOSSEUM</span>
+                  <span className="betaTag" aria-label="Beta">BETA</span>
+                </div>
 
-      <div style={{ marginTop: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <WalletMultiButton />
-        <button className="btn" onClick={() => onRefresh()} disabled={!snap}>
-          Refresh
-        </button>
-      </div>
+                <div className="heroTitle">Agent roster</div>
+                <div className="heroSub">
+                  Wallet: <span className="mono">{normalizedOwner || '—'}</span>
+                  {lastUpdatedAt ? <span className="muted"> · updated {lastUpdatedAt.toLocaleTimeString()}</span> : null}
+                </div>
 
-      {err ? (
-        <div className="banner bannerWarn" style={{ marginTop: 10 }}>
-          <div className="bannerTitle">Error</div>
-          <div className="bannerSub">{err}</div>
-        </div>
-      ) : null}
-
-      {wallet.publicKey && agents.length === 0 ? (
-        <div className="hint" style={{ marginTop: 10 }}>
-          No claimed agents found for <span className="mono">{owner}</span>.
-        </div>
-      ) : null}
-
-      {agents.length > 0 ? (
-        <div className="table" style={{ marginTop: 12 }}>
-          <div className="row head">
-            <div>Agent</div>
-            <div>LLM</div>
-            <div>Wallet</div>
-            <div></div>
-          </div>
-          {agents.map((a) => (
-            <div className="row" key={a.id}>
-              <div>
-                {a.name} <span className="mutedId">{a.id.slice(0, 8)}</span>
-              </div>
-              <div className="mono">{a.llm || '—'}</div>
-              <div className="mono" style={{ overflowWrap: 'anywhere' }}>
-                {a.payerWalletPubkey ? a.payerWalletPubkey : <span className="muted">(not created)</span>}
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                {a.payerWalletPubkey ? (
-                  <button className="btn" onClick={() => a.payerWalletPubkey && copyText(a.payerWalletPubkey)}>
-                    Copy
+                <div className="ctaRow" style={{ alignItems: 'center' }}>
+                  <WalletMultiButton />
+                  <button className="btn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
+                    Refresh
                   </button>
-                ) : (
-                  <button className="ctaPrimary" onClick={() => createWallet(a.id)} disabled={busyId === a.id}>
-                    {busyId === a.id ? 'Creating…' : 'Create wallet'}
-                  </button>
-                )}
+                  <a className="ctaGhost" href="/" style={{ textDecoration: 'none' }}>
+                    Back to arena
+                  </a>
+                </div>
+
+                {err ? (
+                  <div className="banner bannerWarn" style={{ marginTop: 14 }}>
+                    <div className="bannerTitle">Error</div>
+                    <div className="bannerSub">{err}</div>
+                  </div>
+                ) : null}
+
+                {bootStatus === 'error' ? (
+                  <div className="banner bannerWarn" style={{ marginTop: 14 }}>
+                    <div className="bannerTitle">Failed to load</div>
+                    <div className="bannerSub">Could not fetch /api/state. Try refresh.</div>
+                  </div>
+                ) : null}
+
+                <div className="card" style={{ marginTop: 14 }}>
+                  <div className="cardTitle">Agents</div>
+                  <div className="cardSub">
+                    These agents were claimed by this wallet. Create a payer wallet for each agent, then fund it with devnet USDC.
+                  </div>
+
+                  {agents.length === 0 ? (
+                    <div className="hint" style={{ marginTop: 10 }}>
+                      No agents claimed by this wallet.
+                    </div>
+                  ) : (
+                    <div className="table" style={{ marginTop: 12 }}>
+                      <div className="row head">
+                        <div>Agent</div>
+                        <div>LLM</div>
+                        <div>Payer wallet</div>
+                        <div></div>
+                      </div>
+                      {agents.map((a) => (
+                        <div className="row" key={a.id}>
+                          <div>
+                            {a.name} <span className="mutedId">{a.id.slice(0, 8)}</span>
+                          </div>
+                          <div className="mono">{a.llm || '—'}</div>
+                          <div className="mono" style={{ overflowWrap: 'anywhere' }}>
+                            {a.payerWalletPubkey ? a.payerWalletPubkey : <span className="muted">(not created)</span>}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                            {a.payerWalletPubkey ? (
+                              <>
+                                <button className="btn" onClick={() => a.payerWalletPubkey && copyText(a.payerWalletPubkey)}>
+                                  Copy
+                                </button>
+                                {canManage ? (
+                                  <button className="ctaGhost" onClick={() => revokeWallet(a.id)} disabled={busyId === a.id}>
+                                    Revoke wallet
+                                  </button>
+                                ) : null}
+                              </>
+                            ) : canManage ? (
+                              <button className="ctaPrimary" onClick={() => createWallet(a.id)} disabled={busyId === a.id}>
+                                {busyId === a.id ? 'Creating…' : 'Create wallet'}
+                              </button>
+                            ) : null}
+
+                            {canManage ? (
+                              <button className="ctaGhost" onClick={() => revokeAgent(a.id)} disabled={busyId === a.id}>
+                                Revoke agent
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="hint" style={{ marginTop: 12 }}>
+                    {canManage ? (
+                      <>You can manage this roster because your connected wallet matches the URL wallet.</>
+                    ) : (
+                      <>This is a public roster page. Connect the owning wallet to manage these agents.</>
+                    )}
+                  </div>
+                </div>
+
+                <div className="hint" style={{ marginTop: 12 }}>
+                  Share: <span className="mono">{window.location.href}</span>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      ) : null}
-
-      <div className="hint" style={{ marginTop: 12 }}>
-        Tip: after creating a wallet, send it devnet USDC and a little SOL.
-      </div>
+      </main>
     </div>
   )
 }
@@ -677,11 +746,15 @@ function getInitialTheme(): 'dark' | 'light' {
 }
 
 export default function App() {
-  const { snap, wsStatus, bootStatus, lastUpdatedAt, refresh } = useArenaState()
+  const { snap, wsStatus, bootStatus, lastUpdatedAt, refresh: _refresh } = useArenaState()
 
   // Simple client-side routing (no react-router)
   const path = typeof window !== 'undefined' ? window.location.pathname : '/'
   const claimToken = path.startsWith('/claim/') ? decodeURIComponent(path.slice('/claim/'.length).split('/')[0] || '') : ''
+  const rosterWallet = path.startsWith('/agents/') ? decodeURIComponent(path.slice('/agents/'.length).split('/')[0] || '') : ''
+  if (rosterWallet) {
+    return <AgentsRosterPage ownerWallet={rosterWallet} />
+  }
 
   // Token info removed for production until launch.
 
@@ -2284,8 +2357,6 @@ export default function App() {
                           <li>Now the agent can auto-pay x402 and enter tournaments</li>
                         </ol>
                       </div>
-
-                      <OwnerAgentsPanel snap={snap} onRefresh={refresh} />
 
                       <div style={{ marginTop: 10 }}>
                         <CommandRow label="Open skill" cmd={`https://clawosseum.fun/skill.md`} />

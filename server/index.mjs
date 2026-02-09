@@ -19,6 +19,9 @@ import { paymentMiddleware } from '@x402/express'
 import { x402ResourceServer, HTTPFacilitatorClient } from '@x402/core/server'
 import { registerExactEvmScheme } from '@x402/evm/exact/server'
 import { registerExactSvmScheme } from '@x402/svm/exact/server'
+import { encodePaymentSignatureHeader, decodePaymentRequiredHeader } from '@x402/core/http'
+import { Connection, PublicKey as Web3PublicKey, TransactionMessage, VersionedTransaction } from '@solana/web3.js'
+import { getAssociatedTokenAddress, createTransferCheckedInstruction, getMint } from '@solana/spl-token'
 
 const PORT = Number(process.env.PORT || 5195)
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data')
@@ -751,6 +754,25 @@ function getOwnerManageMessage({ action, agentId, nonce }) {
   return `Clawosseum Owner Action\nAction: ${action}\nAgent: ${agentId}\nNonce: ${nonce}`
 }
 
+function verifyOwnerSignature({ publicKeyStr, signatureB64, message }) {
+  let pkBytes
+  try {
+    pkBytes = new PublicKey(publicKeyStr).toBytes()
+  } catch {
+    return { ok: false, error: 'invalid publicKey' }
+  }
+
+  let sigBytes
+  try {
+    sigBytes = b64decode(signatureB64)
+  } catch {
+    return { ok: false, error: 'invalid signature encoding' }
+  }
+
+  const ok = nacl.sign.detached.verify(new TextEncoder().encode(message), sigBytes, pkBytes)
+  return ok ? { ok: true } : { ok: false, error: 'invalid signature' }
+}
+
 app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) => {
   const agentId = (req.params.agentId || '').toString().trim()
   const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
@@ -774,22 +796,8 @@ app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) 
   const expectedMessage = getOwnerManageMessage({ action: 'create_agent_wallet', agentId, nonce })
   if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
 
-  let pkBytes
-  try {
-    pkBytes = new PublicKey(ownerPublicKeyStr).toBytes()
-  } catch {
-    return res.status(400).json({ ok: false, error: 'invalid publicKey' })
-  }
-
-  let sigBytes
-  try {
-    sigBytes = b64decode(signatureB64)
-  } catch {
-    return res.status(400).json({ ok: false, error: 'invalid signature encoding' })
-  }
-
-  const ok = nacl.sign.detached.verify(new TextEncoder().encode(expectedMessage), sigBytes, pkBytes)
-  if (!ok) return res.status(401).json({ ok: false, error: 'invalid signature' })
+  const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
+  if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
 
   if (agent.privyWalletId && agent.payerWalletPubkey) {
     return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey, existed: true })
@@ -826,6 +834,216 @@ app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) 
     return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey })
   } catch (e) {
     return res.status(500).json({ ok: false, error: e?.message || 'privy wallet create error' })
+  }
+})
+
+// ---- x402 proxy (Privy payer) ----
+// Proxy endpoints for agents running on user machines:
+// - agent makes a single call to /api/v1/proxy/*
+// - server pays the 402 using the agent's Privy wallet
+// - server retries the original endpoint with PAYMENT-SIGNATURE
+
+const SOLANA_RPC_URL = (process.env.SOLANA_RPC_URL || process.env.RPC_URL || 'https://api.devnet.solana.com').trim()
+const connection = new Connection(SOLANA_RPC_URL, 'confirmed')
+
+async function buildExactSvmPaymentTx({
+  payerPubkey,
+  payToPubkey,
+  mintPubkey,
+  amountMinor,
+  feePayerPubkey,
+}) {
+  const payer = new Web3PublicKey(payerPubkey)
+  const payTo = new Web3PublicKey(payToPubkey)
+  const mint = new Web3PublicKey(mintPubkey)
+  const feePayer = new Web3PublicKey(feePayerPubkey)
+
+  const mintInfo = await getMint(connection, mint)
+  const sourceAta = await getAssociatedTokenAddress(mint, payer, false, mintInfo.programId)
+  const destAta = await getAssociatedTokenAddress(mint, payTo, false, mintInfo.programId)
+
+  const ix = createTransferCheckedInstruction(
+    sourceAta,
+    mint,
+    destAta,
+    payer,
+    BigInt(amountMinor),
+    mintInfo.decimals,
+    [],
+    mintInfo.programId,
+  )
+
+  const { blockhash } = await connection.getLatestBlockhash('finalized')
+  const msg = new TransactionMessage({
+    payerKey: feePayer,
+    recentBlockhash: blockhash,
+    instructions: [ix],
+  }).compileToV0Message()
+
+  const tx = new VersionedTransaction(msg)
+  return Buffer.from(tx.serialize()).toString('base64')
+}
+
+async function privySignTransactionBase64(privyWalletId, unsignedTxB64) {
+  // Uses @privy-io/node under the hood via HTTP (server-side).
+  const headers = privyAuthHeader()
+  if (!headers) throw new Error('server missing Privy credentials')
+
+  const r = await fetch(`https://api.privy.io/v1/wallets/${encodeURIComponent(privyWalletId)}/rpc`, {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      chain_type: 'solana',
+      method: 'signTransaction',
+      params: { transaction: unsignedTxB64, encoding: 'base64' },
+    }),
+  })
+  const out = await r.json().catch(() => null)
+  if (!r.ok) throw new Error(`privy signTransaction failed (${r.status})`)
+  const signed = out?.data?.signed_transaction
+  if (!signed) throw new Error('privy returned no signed_transaction')
+  return signed
+}
+
+function getPaymentRequiredHeader(headers) {
+  // node fetch Headers
+  return headers.get('PAYMENT-REQUIRED') || headers.get('payment-required')
+}
+
+async function proxyFetchWithAutoPay({ agent, method, path, body, authHeader }) {
+  const url = `http://127.0.0.1:${PORT}${path}`
+
+  // First attempt (expect 200 or 402)
+  const r1 = await fetch(url, {
+    method,
+    headers: {
+      'content-type': 'application/json',
+      ...(authHeader ? { authorization: authHeader } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (r1.status !== 402) return r1
+
+  if (!agent?.claimed || !agent?.claimedByWallet) throw new Error('agent must be claimed to auto-pay')
+  if (!agent?.privyWalletId || !agent?.payerWalletPubkey) throw new Error('agent wallet not created')
+
+  const prHeader = getPaymentRequiredHeader(r1.headers)
+  if (!prHeader) throw new Error('missing PAYMENT-REQUIRED header')
+
+  const paymentRequired = decodePaymentRequiredHeader(prHeader)
+  const accepts = Array.isArray(paymentRequired.accepts) ? paymentRequired.accepts : []
+  const req = accepts.find((a) => a.scheme === 'exact' && a.network === X402_NETWORK)
+  if (!req) throw new Error('no matching payment requirement for exact+network')
+
+  // Hard safety checks: only allow our configured payTo
+  if (String(req.payTo) !== String(X402_PAY_TO)) throw new Error('payTo mismatch')
+
+  const feePayer = req.extra?.feePayer
+  if (!feePayer) throw new Error('missing feePayer in requirement extra')
+
+  // Build unsigned tx then sign with Privy wallet (payer)
+  const unsignedTxB64 = await buildExactSvmPaymentTx({
+    payerPubkey: agent.payerWalletPubkey,
+    payToPubkey: req.payTo,
+    mintPubkey: req.asset,
+    amountMinor: req.amount,
+    feePayerPubkey: feePayer,
+  })
+
+  const signedTxB64 = await privySignTransactionBase64(agent.privyWalletId, unsignedTxB64)
+
+  const paymentPayload = {
+    x402Version: paymentRequired.x402Version,
+    payload: { transaction: signedTxB64 },
+  }
+
+  const payHdr = encodePaymentSignatureHeader(paymentPayload)
+
+  // Retry with payment signature
+  return await fetch(url, {
+    method,
+    headers: {
+      'content-type': 'application/json',
+      ...(authHeader ? { authorization: authHeader } : {}),
+      ...payHdr,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+}
+
+// Owner-driven proxy register (pays x402 on behalf of an agent using its Privy wallet)
+app.post('/api/v1/proxy/register', authLimiter, async (req, res) => {
+  try {
+    const name = (req.body?.name || '').toString().trim()
+    const llm = (req.body?.llm || '').toString().trim()
+    const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
+    const signatureB64 = (req.body?.signature || '').toString().trim()
+    const nonce = (req.body?.nonce || '').toString().trim()
+    const message = (req.body?.message || '').toString()
+
+    if (!name || name.length > 64) return res.status(400).json({ ok: false, error: 'name required (<=64 chars)' })
+    if (!llm || llm.length > 32) return res.status(400).json({ ok: false, error: 'llm required (<=32 chars)' })
+    if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
+    if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
+    if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
+
+    const agent = getOrCreateAgentByName(name, llm)
+    if (!agent.claimed || agent.claimedByWallet !== ownerPublicKeyStr) {
+      return res.status(403).json({ ok: false, error: 'agent must be claimed by this wallet' })
+    }
+
+    const expectedMessage = `Clawosseum Owner Action\nAction: proxy_register\nAgent: ${agent.id}\nNonce: ${nonce}`
+    if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
+
+    const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
+    if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
+
+    const r = await proxyFetchWithAutoPay({
+      agent,
+      method: 'POST',
+      path: '/api/v1/auth/register',
+      body: { name, llm },
+      authHeader: null,
+    })
+
+    const out = await r.json().catch(() => null)
+    return res.status(r.status).json(out || { ok: false, error: 'proxy failed' })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || 'proxy register failed' })
+  }
+})
+
+// Agent-driven proxy tournament enter (requires agent JWT)
+app.post('/api/v1/proxy/tournament-enter', writeLimiter, jwtRequired, async (req, res) => {
+  try {
+    const agentId = (req.body?.agentId || '').toString().trim()
+    const tournamentId = (req.body?.tournamentId || '').toString().trim()
+    if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+    if (!tournamentId) return res.status(400).json({ ok: false, error: 'tournamentId required' })
+
+    const agent = state.agents.find((a) => a.id === agentId)
+    if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+
+    // Ensure JWT belongs to this agent name (cheap check)
+    if (req.user?.name && agent.name && String(req.user.name) !== String(agent.name)) {
+      return res.status(403).json({ ok: false, error: 'jwt does not match agent' })
+    }
+
+    const authHeader = (req.headers.authorization || '').toString()
+
+    const r = await proxyFetchWithAutoPay({
+      agent,
+      method: 'POST',
+      path: '/api/tournament-enter',
+      body: { tournamentId, agentId },
+      authHeader,
+    })
+
+    const out = await r.json().catch(() => null)
+    return res.status(r.status).json(out || { ok: false, error: 'proxy failed' })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || 'proxy tournament-enter failed' })
   }
 })
 

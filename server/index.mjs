@@ -508,7 +508,20 @@ if (X402_ENABLED) {
     console.warn('[x402] X402_ENABLED=1 but X402_PAY_TO is not set; x402 will be disabled')
   } else {
     try {
-    const facilitatorClient = new HTTPFacilitatorClient({ url: X402_FACILITATOR_URL })
+    const X402_FACILITATOR_TOKEN = (process.env.X402_FACILITATOR_TOKEN || '').trim()
+
+    const facilitatorClient = new HTTPFacilitatorClient({
+      url: X402_FACILITATOR_URL,
+      // Optional shared-secret header so only authorized internal callers can use the facilitator.
+      // Facilitator should verify this header on /supported, /verify, /settle.
+      createAuthHeaders: X402_FACILITATOR_TOKEN
+        ? () => ({
+            supported: { 'x-facilitator-token': X402_FACILITATOR_TOKEN },
+            verify: { 'x-facilitator-token': X402_FACILITATOR_TOKEN },
+            settle: { 'x-facilitator-token': X402_FACILITATOR_TOKEN },
+          })
+        : undefined,
+    })
     x402Server = new x402ResourceServer(facilitatorClient)
 
     // Register schemes based on network family.

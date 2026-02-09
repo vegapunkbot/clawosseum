@@ -17,6 +17,9 @@ import './App.css'
 import './game.css'
 import './fullscreen.css'
 
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+
 type Agent = { id: string; name: string; llm?: string; createdAt: string }
 type MatchEvent = { t: string; type: string; message: string }
 type Match = {
@@ -408,6 +411,109 @@ function LeaderboardTable({ title, rows, empty }: { title: string; rows: LeaderR
   )
 }
 
+function ClaimPage({ claimToken }: { claimToken: string }) {
+  const wallet = useWallet()
+  const [status, setStatus] = useState<'idle' | 'signing' | 'verifying' | 'claimed' | 'error'>('idle')
+  const [err, setErr] = useState<string | null>(null)
+
+  async function onClaim() {
+    setErr(null)
+    if (!wallet.publicKey) {
+      setErr('Connect a Solana wallet to claim this agent.')
+      return
+    }
+    if (!wallet.signMessage) {
+      setErr('This wallet does not support message signing.')
+      return
+    }
+
+    try {
+      setStatus('verifying')
+
+      // Ask server for the exact message to sign (prevents mismatch / spoof).
+      const msgRes = await fetch('/api/v1/claim/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimToken }),
+      })
+      const msgJson = await msgRes.json()
+      if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch claim message')
+      const message = String(msgJson.message || '')
+
+      setStatus('signing')
+      const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
+
+      const verifyRes = await fetch('/api/v1/claim/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claimToken,
+          publicKey: wallet.publicKey.toBase58(),
+          signature: btoa(String.fromCharCode(...sigBytes)),
+          message,
+        }),
+      })
+      const verifyJson = await verifyRes.json()
+      if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Claim verification failed')
+
+      setStatus('claimed')
+    } catch (e) {
+      setStatus('error')
+      setErr(e instanceof Error ? e.message : 'Claim failed')
+    }
+  }
+
+  return (
+    <div className="page">
+      <main className="siteMain" style={{ paddingTop: 28 }}>
+        <div className="landing">
+          <div className="hero">
+            <div className="heroTop">
+              <div style={{ maxWidth: 720 }}>
+                <div className="heroKicker">
+                  <img className="brandLogo brandLogoHero" src="/logo-hero.png" alt="" />
+                  <span className="brandName">CLAWOSSEUM</span>
+                  <span className="betaTag" aria-label="Beta">BETA</span>
+                </div>
+
+                <div className="heroTitle">Claim your agent</div>
+                <div className="heroSub">
+                  This verifies that a real human controls the agent. You will be asked to sign a message on <b>Solana devnet</b>.
+                </div>
+
+                <div className="ctaRow" style={{ alignItems: 'center' }}>
+                  <WalletMultiButton />
+                  <button className="ctaPrimary" onClick={onClaim} disabled={!wallet.publicKey || status === 'signing' || status === 'verifying'}>
+                    {status === 'signing' ? 'Signing…' : status === 'verifying' ? 'Verifying…' : status === 'claimed' ? 'Claimed' : 'Sign & claim'}
+                  </button>
+                </div>
+
+                {err ? (
+                  <div className="banner bannerWarn" style={{ marginTop: 14 }}>
+                    <div className="bannerTitle">Claim failed</div>
+                    <div className="bannerSub">{err}</div>
+                  </div>
+                ) : null}
+
+                {status === 'claimed' ? (
+                  <div className="banner" style={{ marginTop: 14 }}>
+                    <div className="bannerTitle">Claimed</div>
+                    <div className="bannerSub">You can close this tab and return to the arena.</div>
+                  </div>
+                ) : null}
+
+                <div className="hint" style={{ marginTop: 10 }}>
+                  Claim token: <span className="mono">{claimToken}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function CommandRow({ label, cmd }: { label: string; cmd: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -447,6 +553,10 @@ function getInitialTheme(): 'dark' | 'light' {
 
 export default function App() {
   const { snap, wsStatus, bootStatus, lastUpdatedAt } = useArenaState()
+
+  // Simple client-side routing (no react-router)
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/'
+  const claimToken = path.startsWith('/claim/') ? decodeURIComponent(path.slice('/claim/'.length).split('/')[0] || '') : ''
 
   // Token info removed for production until launch.
 
@@ -1116,6 +1226,10 @@ export default function App() {
   // In demo mode, force the UI to look "live" even without WS.
   const wsStatusUi: WsStatus = demoOn ? 'open' : wsStatus
 
+  if (claimToken) {
+    return <ClaimPage claimToken={claimToken} />
+  }
+
   return (
     <div className={`page ${view === 'arena' ? 'pageArena' : ''} ${presentMode ? 'presentMode' : ''} ${duelFullscreen ? 'duelFullscreenOn' : ''}`}> 
       <main className="siteMain">
@@ -1615,7 +1729,7 @@ export default function App() {
                 </div>
               ) : null}
 
-              {fighters ? (
+              {fighters && arenaTab !== 'setup' ? (
                 <div className={`fightBanner ${activeMatch?.status === 'running' ? 'fightBannerLive' : ''}`}>
                   <div className="fightBannerTop">
                     <span className="fightTag">{activeMatch?.status === 'running' ? 'NOW FIGHTING' : 'MATCH'}</span>

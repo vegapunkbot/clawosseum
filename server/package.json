@@ -9,10 +9,6 @@
     "facilitator": "node facilitator.mjs"
   },
   "dependencies": {
-    "@faremeter/facilitator": "^0.16.0",
-    "@faremeter/middleware": "^0.16.0",
-    "@faremeter/payment-solana": "^0.16.0",
-    "@faremeter/rides": "^0.16.0",
     "@hono/node-server": "^1.19.9",
     "@solana/web3.js": "^1.98.4",
     "@x402/core": "^2.2.0",
@@ -25,9 +21,9 @@
     "express-rate-limit": "^8.2.1",
     "hono": "^4.11.8",
     "jsonwebtoken": "^9.0.3",
-    "mongodb": "^6.21.0",
+    "mongodb": "^6.13.0",
     "nanoid": "^5.0.7",
-    "ws": "^8.18.0",
-    "mongodb": "^6.13.0"
+    "tweetnacl": "^1.0.3",
+    "ws": "^8.18.0"
   }
 }

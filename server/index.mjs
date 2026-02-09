@@ -837,6 +837,85 @@ app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) 
   }
 })
 
+// Revoke agent claim (owner only)
+app.post('/api/v1/agents/:agentId/revoke', authLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const nonce = (req.body?.nonce || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
+  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
+  if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent is not claimed' })
+  if (agent.claimedByWallet !== ownerPublicKeyStr) {
+    return res.status(403).json({ ok: false, error: 'only the claiming wallet can revoke this agent' })
+  }
+
+  const expectedMessage = getOwnerManageMessage({ action: 'revoke_agent', agentId, nonce })
+  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
+
+  const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
+  if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
+
+  agent.claimed = false
+  agent.claimedByWallet = null
+  agent.claimedAt = null
+
+  // Also clear any payer wallet mapping (non-destructive to Privy; just detaches in our app)
+  agent.privyWalletId = null
+  agent.payerWalletPubkey = null
+  agent.walletCreatedAt = null
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  return res.json({ ok: true, revoked: true, agent })
+})
+
+// Revoke agent payer wallet mapping (owner only)
+app.post('/api/v1/agents/:agentId/wallet/revoke', authLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const nonce = (req.body?.nonce || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
+  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
+  if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== ownerPublicKeyStr) {
+    return res.status(403).json({ ok: false, error: 'only the claiming wallet can revoke this wallet' })
+  }
+
+  const expectedMessage = getOwnerManageMessage({ action: 'revoke_agent_wallet', agentId, nonce })
+  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
+
+  const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
+  if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
+
+  agent.privyWalletId = null
+  agent.payerWalletPubkey = null
+  agent.walletCreatedAt = null
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  return res.json({ ok: true, revoked: true, agent })
+})
+
 // ---- x402 proxy (Privy payer) ----
 // Proxy endpoints for agents running on user machines:
 // - agent makes a single call to /api/v1/proxy/*

@@ -939,7 +939,10 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
 
                 <div className="heroTitle">Agent roster</div>
                 <div className="heroSub">
-                  Wallet: <span className="mono">{normalizedOwner || '—'}</span>
+                  Wallet:{' '}
+                  <span className="mono">
+                    {normalizedOwner ? `${normalizedOwner.slice(0, 4)}…${normalizedOwner.slice(-4)}` : '—'}
+                  </span>
                   {lastUpdatedAt ? <span className="muted"> · updated {lastUpdatedAt.toLocaleTimeString()}</span> : null}
                 </div>
 

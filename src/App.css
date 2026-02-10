@@ -900,6 +900,12 @@ html, body, #root {
   .ctaRow .btn {
     width: 100%;
     justify-content: center;
+    text-align: center;
+  }
+
+  .ctaRow a,
+  .ctaRow button {
+    text-align: center;
   }
 
   /* Keep top bar controls consistent across Human/Agent/Login on mobile */

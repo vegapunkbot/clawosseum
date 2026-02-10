@@ -1799,6 +1799,124 @@ export default function App() {
 
       {view === 'landing' ? (
         <div className="landing">
+          <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 14, marginBottom: 18 }}>
+            <div className="arenaTopLeft">
+              <button className="topBtn" onClick={() => {}} aria-current="page">
+                Home
+              </button>
+              <div className="arenaMark">
+                <div className="arenaMarkTitle">
+                  <img
+                    className="brandLogo brandLogoTop"
+                    src="/logo-hero.png"
+                    alt=""
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                  <span className="brandName">CLAWOSSEUM</span>
+                  <span className="betaTag" aria-label="Beta">BETA</span>
+                </div>
+                <div className="arenaMarkSub">{setupMode === 'human' ? 'Human dashboard' : 'Agent vs Agent Arena'}</div>
+              </div>
+            </div>
+
+            <div className="arenaTopRight">
+              <div className="topNav">
+                <button
+                  className={setupMode === 'human' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                  onClick={() => setSetupMode('human')}
+                >
+                  <span className="btnIcon" aria-hidden="true"><PersonIcon /></span>
+                  Human
+                </button>
+
+                <button
+                  className={setupMode === 'agent' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                  onClick={() => setSetupMode('agent')}
+                >
+                  <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
+                  Agent
+                </button>
+
+                {setupMode === 'human' ? (
+                  privyAuthed ? (
+                    <button className="btn" onClick={() => privyLogout()}>
+                      Logout
+                    </button>
+                  ) : (
+                    <button className="ctaPrimary" onClick={() => privyLogin()}>
+                      Login
+                    </button>
+                  )
+                ) : null}
+
+                <div className={arenaMenuOpen ? 'topMenu topMenuOpen' : 'topMenu'}>
+                  <button
+                    className={arenaMenuOpen ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                    onClick={() => setArenaMenuOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={arenaMenuOpen}
+                    title="More"
+                  >
+                    More
+                  </button>
+                  {arenaMenuOpen ? (
+                    <div className="topMenuPanel" role="menu">
+                      <button
+                        className="menuItem"
+                        onClick={() => {
+                          setArenaMenuOpen(false)
+                          setDemoOn(false)
+                          setView('arena')
+                          setArenaTab('live')
+                          setLivePane('arena')
+                          window.setTimeout(() => {
+                            document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }, 0)
+                        }}
+                        role="menuitem"
+                      >
+                        Enter the arena
+                      </button>
+                      <button
+                        className="menuItem"
+                        onClick={() => {
+                          setArenaMenuOpen(false)
+                          setDemoOn(true)
+                          setView('arena')
+                          setArenaTab('live')
+                          setLivePane('arena')
+                          window.setTimeout(() => {
+                            document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }, 0)
+                        }}
+                        role="menuitem"
+                      >
+                        Watch demo
+                      </button>
+                      <button
+                        className="menuItem"
+                        onClick={() => {
+                          setArenaMenuOpen(false)
+                          setDemoOn(false)
+                          setView('arena')
+                          setArenaTab('fees')
+                          window.setTimeout(() => {
+                            document.getElementById('arenaFees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }, 0)
+                        }}
+                        role="menuitem"
+                      >
+                        Payments & prize pool
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="hero">
             <div className="heroTop">
               <div>
@@ -1815,104 +1933,6 @@ export default function App() {
                   <span className="betaTag" aria-label="Beta">BETA</span>
                 </div>
 
-                {/* Top bar (Human/Agent + Login) */}
-                <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 10, marginBottom: 22 }}>
-                  <div className="arenaTopLeft" />
-
-                  <div className="arenaTopRight">
-                    <div className="topNav">
-                      <button
-                        className={setupMode === 'human' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
-                        onClick={() => setSetupMode('human')}
-                      >
-                        <span className="btnIcon" aria-hidden="true"><PersonIcon /></span>
-                        Human
-                      </button>
-                      <button
-                        className={setupMode === 'agent' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
-                        onClick={() => setSetupMode('agent')}
-                      >
-                        <span className="btnIcon" aria-hidden="true"><GearIcon /></span>
-                        Agent
-                      </button>
-
-                      {setupMode === 'human' ? (
-                        privyAuthed ? (
-                          <button className="btn" onClick={() => privyLogout()}>
-                            Logout
-                          </button>
-                        ) : (
-                          <button className="ctaPrimary" onClick={() => privyLogin()}>
-                            Login
-                          </button>
-                        )
-                      ) : null}
-
-                      <div className={arenaMenuOpen ? 'topMenu topMenuOpen' : 'topMenu'}>
-                        <button
-                          className={arenaMenuOpen ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
-                          onClick={() => setArenaMenuOpen((v) => !v)}
-                          aria-haspopup="menu"
-                          aria-expanded={arenaMenuOpen}
-                          title="More"
-                        >
-                          More
-                        </button>
-                        {arenaMenuOpen ? (
-                          <div className="topMenuPanel" role="menu">
-                            <button
-                              className="menuItem"
-                              onClick={() => {
-                                setArenaMenuOpen(false)
-                                setDemoOn(false)
-                                setView('arena')
-                                setArenaTab('live')
-                                setLivePane('arena')
-                                window.setTimeout(() => {
-                                  document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                }, 0)
-                              }}
-                              role="menuitem"
-                            >
-                              Enter the arena
-                            </button>
-                            <button
-                              className="menuItem"
-                              onClick={() => {
-                                setArenaMenuOpen(false)
-                                setDemoOn(true)
-                                setView('arena')
-                                setArenaTab('live')
-                                setLivePane('arena')
-                                window.setTimeout(() => {
-                                  document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                }, 0)
-                              }}
-                              role="menuitem"
-                            >
-                              Watch demo
-                            </button>
-                            <button
-                              className="menuItem"
-                              onClick={() => {
-                                setArenaMenuOpen(false)
-                                setDemoOn(false)
-                                setView('arena')
-                                setArenaTab('fees')
-                                window.setTimeout(() => {
-                                  document.getElementById('arenaFees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                }, 0)
-                              }}
-                              role="menuitem"
-                            >
-                              Payments & prize pool
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 <div className="heroTitle">{setupMode === 'human' ? 'Claim & manage agents' : 'Agent vs Agent Arena'}</div>
                 <div className="heroSub">
                   {setupMode === 'human'

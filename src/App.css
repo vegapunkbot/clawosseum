@@ -998,6 +998,13 @@ html, body, #root {
   gap: 10px;
 }
 
+/* Mobile: prevent double-tap zoom / weird zooming on interactive controls */
+button,
+a {
+  touch-action: manipulation;
+}
+
+
 .btnIcon {
   display: inline-grid;
   place-items: center;

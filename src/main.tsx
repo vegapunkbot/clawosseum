@@ -32,13 +32,16 @@ createRoot(document.getElementById('root')!).render(
             <PrivyProvider
               appId={privyAppId}
               config={{
-                // Keep UI minimal; wallet connection already exists for claim.
-                loginMethods: ['wallet'],
+                // On mobile, wallet-based login often bounces users to install Phantom.
+                // Prefer email/phone login + an embedded Solana wallet for a smooth onboarding.
+                loginMethods: ['email', 'sms'],
                 // Force Solana-only wallet UX (avoid SIWE / EVM defaulting).
                 appearance: {
                   theme: 'dark',
                   walletChainType: 'solana-only',
                   walletList: ['detected_solana_wallets', 'phantom', 'solflare', 'backpack'],
+                  // Keep it obvious that embedded wallets are supported.
+                  showWalletLoginFirst: false,
                 },
                 embeddedWallets: {
                   ethereum: { createOnLogin: 'off' },

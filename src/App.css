@@ -890,6 +890,27 @@ html, body, #root {
 }
 
 @media (max-width: 520px) {
+  /* Global layout: reduce gutters + card padding for small screens */
+  .landing {
+    padding-top: 16px;
+    padding-bottom: 18px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  .hero {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .heroTitle {
+    font-size: clamp(1.45rem, 7vw, 2.0rem);
+  }
+
+  .heroSub {
+    font-size: 0.98rem;
+  }
+
   .ctaRow {
     flex-direction: column;
     align-items: stretch;
@@ -906,6 +927,15 @@ html, body, #root {
   .ctaRow a,
   .ctaRow button {
     text-align: center;
+  }
+
+  /* Arena topbar: keep it inside the viewport and avoid "giant" controls */
+  .arenaTopbar {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+    padding: 10px;
+    border-radius: 18px;
   }
 
   /* Keep top bar controls consistent across Human/Agent/Login on mobile */
@@ -926,6 +956,12 @@ html, body, #root {
 
   .arenaTopbar .ctaPrimary:hover {
     transform: none;
+  }
+
+  /* Make long mono strings wrap gracefully */
+  .mono {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 

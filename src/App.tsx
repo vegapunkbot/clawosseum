@@ -423,49 +423,32 @@ function LeaderboardTable({ title, rows, empty }: { title: string; rows: LeaderR
 }
 
 function ClaimPage({ claimToken }: { claimToken: string }) {
-  const wallet = useWallet()
-  const [status, setStatus] = useState<'idle' | 'signing' | 'verifying' | 'claimed' | 'error'>('idle')
+  const { authenticated, login, getAccessToken } = usePrivy()
+  const [status, setStatus] = useState<'idle' | 'verifying' | 'claimed' | 'error'>('idle')
   const [err, setErr] = useState<string | null>(null)
 
-  async function onClaim() {
+  async function onClaimWithPrivy() {
     setErr(null)
-    if (!wallet.publicKey) {
-      setErr('Connect a Solana wallet to claim this agent.')
-      return
-    }
-    if (!wallet.signMessage) {
-      setErr('This wallet does not support message signing.')
+    if (!authenticated) {
+      await login()
       return
     }
 
     try {
       setStatus('verifying')
+      const token = await getAccessToken()
+      if (!token) throw new Error('Missing Privy access token')
 
-      // Ask server for the exact message to sign (prevents mismatch / spoof).
-      const msgRes = await fetch('/api/v1/claim/message', {
+      const r = await fetch('/api/v1/claim/privy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ claimToken }),
       })
-      const msgJson = await msgRes.json()
-      if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch claim message')
-      const message = String(msgJson.message || '')
-
-      setStatus('signing')
-      const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
-
-      const verifyRes = await fetch('/api/v1/claim/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          claimToken,
-          publicKey: wallet.publicKey.toBase58(),
-          signature: btoa(String.fromCharCode(...sigBytes)),
-          message,
-        }),
-      })
-      const verifyJson = await verifyRes.json()
-      if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Claim verification failed')
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Claim failed (${r.status})`)
 
       setStatus('claimed')
     } catch (e) {
@@ -489,14 +472,16 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
 
                 <div className="heroTitle">Claim your agent</div>
                 <div className="heroSub">
-                  This verifies that a real human controls the agent. You will be asked to sign a message on <b>Solana devnet</b>.
+                  Claim using Privy (no Phantom install required). We’ll attach this agent to your Privy Solana wallet.
                 </div>
 
-                <div className="ctaRow" style={{ alignItems: 'center' }}>
-                  <WalletMultiButton />
-                  <button className="ctaPrimary" onClick={onClaim} disabled={!wallet.publicKey || status === 'signing' || status === 'verifying'}>
-                    {status === 'signing' ? 'Signing…' : status === 'verifying' ? 'Verifying…' : status === 'claimed' ? 'Claimed' : 'Sign & claim'}
+                <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button className="ctaPrimary" onClick={onClaimWithPrivy} disabled={status === 'verifying' || status === 'claimed'}>
+                    {authenticated ? (status === 'verifying' ? 'Claiming…' : status === 'claimed' ? 'Claimed' : 'Claim with Privy') : 'Login to claim'}
                   </button>
+                  <a className="ctaGhost" href="/profile" style={{ textDecoration: 'none' }}>
+                    Profile
+                  </a>
                 </div>
 
                 {err ? (

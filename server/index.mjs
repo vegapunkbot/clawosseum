@@ -760,6 +760,60 @@ app.post('/api/v1/claim/verify', authLimiter, (req, res) => {
   res.json({ ok: true, claimed: true, agent })
 })
 
+// ---- Privy-based wallet-claim (recommended) ----
+// Claims an agent to the caller's Privy Solana wallet (including embedded wallets).
+app.post('/api/v1/claim/privy', authLimiter, async (req, res) => {
+  const claimToken = (req.body?.claimToken || '').toString().trim()
+  if (!claimToken) return res.status(400).json({ ok: false, error: 'claimToken required' })
+
+  if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) return res.status(500).json({ ok: false, error: 'server missing Privy credentials' })
+
+  const token = (req.headers.authorization || '').toString().startsWith('Bearer ')
+    ? (req.headers.authorization || '').toString().slice('Bearer '.length).trim()
+    : ''
+  if (!token) return res.status(401).json({ ok: false, error: 'privy access token required (Authorization: Bearer ...)' })
+
+  const claim = findClaim(claimToken)
+  if (!claim) return res.status(404).json({ ok: false, error: 'claim not found' })
+
+  // Expire lazily
+  if (claim.status === 'pending' && Date.now() > Date.parse(claim.expiresAt)) {
+    claim.status = 'expired'
+    saveStateSoon()
+  }
+  if (claim.status !== 'pending') return res.status(409).json({ ok: false, error: `claim is ${claim.status}` })
+
+  try {
+    const { PrivyClient } = await import('@privy-io/node')
+    const privy = new PrivyClient({ appId: PRIVY_APP_ID, appSecret: PRIVY_APP_SECRET })
+    const payload = await privy.utils().auth().verifyAccessToken(token)
+    const user = await privy.users().get(payload.user_id)
+
+    const wallets = Array.isArray(user?.linked_accounts) ? user.linked_accounts : []
+    const sol = wallets.find((a) => (a?.type === 'wallet' || a?.type === 'smart_wallet') && a?.chain_type === 'solana' && a?.address)
+    const publicKeyStr = sol?.address ? String(sol.address) : ''
+    if (!publicKeyStr) return res.status(400).json({ ok: false, error: 'no solana wallet found for Privy user' })
+
+    claim.status = 'claimed'
+    claim.claimedByWallet = publicKeyStr
+
+    const agent = state.agents.find((a) => a.id === claim.agentId)
+    if (agent) {
+      agent.claimed = true
+      agent.claimedByWallet = publicKeyStr
+      agent.claimedAt = now()
+    }
+
+    saveStateSoon()
+    broadcast({ type: 'agents', payload: state.agents })
+    broadcast({ type: 'state', payload: snapshot() })
+
+    return res.json({ ok: true, claimed: true, agent, wallet: publicKeyStr })
+  } catch (e) {
+    return res.status(401).json({ ok: false, error: e?.message || 'invalid Privy token' })
+  }
+})
+
 app.get('/api/agents', (_req, res) => {
   res.json({ ok: true, agents: state.agents })
 })

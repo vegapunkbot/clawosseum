@@ -712,17 +712,21 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                 </div>
 
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                  <WalletMultiButton />
-                  {authenticated ? (
+                  {/* Wallet connect is only needed for self-serve revoke (connect wallet == URL wallet). */}
+                  {canSelfRevoke || !wallet.publicKey ? <WalletMultiButton /> : null}
+
+                  {/* Privy is only needed for full management (create wallet / edit / revoke wallet mapping). */}
+                  {canSelfRevoke ? null : authenticated ? (
                     <button className="btn" onClick={() => logout()}>
-                      Logout
+                      Logout (Privy)
                     </button>
                   ) : (
                     <button className="ctaPrimary" onClick={() => login()}>
-                      Login (Privy)
+                      Enable management
                     </button>
                   )}
-                  <button className="btn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
+
+                  <button className="ctaGhost" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                     Refresh
                   </button>
                   <a className="ctaGhost" href="/" style={{ textDecoration: 'none' }}>

@@ -805,6 +805,99 @@ function verifyOwnerSignature({ publicKeyStr, signatureB64, message }) {
   return ok ? { ok: true } : { ok: false, error: 'invalid signature' }
 }
 
+// ---- payer wallet management (owner via Privy OR direct wallet signature) ----
+
+// Direct wallet-signature: create payer wallet
+app.post('/api/v1/agents/:agentId/wallet/create/message', writeLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const wallet = (req.body?.wallet || '').toString().trim()
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!wallet) return res.status(400).json({ ok: false, error: 'wallet required' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== wallet) return res.status(403).json({ ok: false, error: 'wallet does not own this agent' })
+
+  const nonce = nanoid(16)
+  const issuedAt = now()
+  const expiresAt = new Date(Date.now() + OWNER_ACTION_TTL_MS).toISOString()
+  const message = getOwnerManageMessage({ action: 'create-payer-wallet', agentId, nonce, wallet })
+
+  pendingOwnerActions.set(nonce, { action: 'create-payer-wallet', agentId, wallet, nonce, issuedAt, expiresAt, message })
+  return res.json({ ok: true, message, nonce, issuedAt, expiresAt })
+})
+
+app.post('/api/v1/agents/:agentId/wallet/create/verify', writeLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const publicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+  const nonce = (req.body?.nonce || '').toString().trim()
+
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!publicKeyStr || !signatureB64 || !message || !nonce) return res.status(400).json({ ok: false, error: 'missing fields' })
+
+  const pending = pendingOwnerActions.get(nonce)
+  if (!pending || pending.agentId !== agentId || pending.action !== 'create-payer-wallet') {
+    return res.status(400).json({ ok: false, error: 'invalid or expired challenge' })
+  }
+  if (pending.message !== message) return res.status(400).json({ ok: false, error: 'message mismatch' })
+  if (pending.wallet !== publicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey mismatch' })
+  if (Date.now() > Date.parse(pending.expiresAt)) {
+    pendingOwnerActions.delete(nonce)
+    return res.status(400).json({ ok: false, error: 'challenge expired' })
+  }
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== publicKeyStr) return res.status(403).json({ ok: false, error: 'wallet does not own this agent' })
+
+  const sigCheck = verifyOwnerSignature({ publicKeyStr, signatureB64, message })
+  if (!sigCheck.ok) return res.status(401).json({ ok: false, error: sigCheck.error || 'invalid signature' })
+
+  pendingOwnerActions.delete(nonce)
+
+  if (agent.privyWalletId && agent.payerWalletPubkey) {
+    return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey, existed: true })
+  }
+
+  const headers = privyAuthHeader()
+  if (!headers) return res.status(500).json({ ok: false, error: 'server missing Privy credentials' })
+
+  try {
+    const idempotencyKey = crypto.randomUUID()
+    const r = await fetch('https://api.privy.io/v1/wallets', {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'content-type': 'application/json',
+        'privy-idempotency-key': idempotencyKey,
+      },
+      body: JSON.stringify({ chain_type: 'solana' }),
+    })
+
+    const out = await r.json().catch(() => null)
+    if (!r.ok) {
+      return res.status(502).json({ ok: false, error: `privy create wallet failed (${r.status})`, detail: out })
+    }
+
+    agent.privyWalletId = out.id
+    agent.payerWalletPubkey = out.address
+    agent.walletCreatedAt = now()
+
+    saveStateSoon()
+    broadcast({ type: 'agents', payload: state.agents })
+    broadcast({ type: 'state', payload: snapshot() })
+
+    return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || 'privy wallet create error' })
+  }
+})
+
+// Privy-token flow (legacy)
 app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) => {
   const agentId = (req.params.agentId || '').toString().trim()
   if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
@@ -952,6 +1045,76 @@ app.post('/api/v1/agents/:agentId/revoke', authLimiter, async (req, res) => {
   return res.json({ ok: true, revoked: true, agent })
 })
 
+// Direct wallet-signature: update agent name
+app.post('/api/v1/agents/:agentId/name/message', writeLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const wallet = (req.body?.wallet || '').toString().trim()
+  const name = (req.body?.name || '').toString().trim()
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!wallet) return res.status(400).json({ ok: false, error: 'wallet required' })
+  if (!name || name.length > 64) return res.status(400).json({ ok: false, error: 'name required (<=64 chars)' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== wallet) return res.status(403).json({ ok: false, error: 'wallet does not own this agent' })
+
+  const nonce = nanoid(16)
+  const issuedAt = now()
+  const expiresAt = new Date(Date.now() + OWNER_ACTION_TTL_MS).toISOString()
+  const message = [
+    getOwnerManageMessage({ action: 'set-agent-name', agentId, nonce, wallet }),
+    `name: ${name}`,
+  ].join('\n')
+
+  pendingOwnerActions.set(nonce, { action: 'set-agent-name', agentId, wallet, nonce, issuedAt, expiresAt, message, name })
+  return res.json({ ok: true, message, nonce, issuedAt, expiresAt })
+})
+
+app.post('/api/v1/agents/:agentId/name/verify', writeLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const publicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+  const nonce = (req.body?.nonce || '').toString().trim()
+
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!publicKeyStr || !signatureB64 || !message || !nonce) return res.status(400).json({ ok: false, error: 'missing fields' })
+
+  const pending = pendingOwnerActions.get(nonce)
+  if (!pending || pending.agentId !== agentId || pending.action !== 'set-agent-name') {
+    return res.status(400).json({ ok: false, error: 'invalid or expired challenge' })
+  }
+  if (pending.message !== message) return res.status(400).json({ ok: false, error: 'message mismatch' })
+  if (pending.wallet !== publicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey mismatch' })
+  if (Date.now() > Date.parse(pending.expiresAt)) {
+    pendingOwnerActions.delete(nonce)
+    return res.status(400).json({ ok: false, error: 'challenge expired' })
+  }
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== publicKeyStr) return res.status(403).json({ ok: false, error: 'wallet does not own this agent' })
+
+  const sigCheck = verifyOwnerSignature({ publicKeyStr, signatureB64, message })
+  if (!sigCheck.ok) return res.status(401).json({ ok: false, error: sigCheck.error || 'invalid signature' })
+
+  const m = message.match(/\nname: (.*)$/)
+  const newName = (m?.[1] || '').trim()
+  if (!newName || newName.length > 64) return res.status(400).json({ ok: false, error: 'invalid name' })
+
+  pendingOwnerActions.delete(nonce)
+
+  agent.name = newName
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  return res.json({ ok: true, agent })
+})
+
 // Update agent metadata (owner only)
 app.patch('/api/v1/agents/:agentId', writeLimiter, async (req, res) => {
   const agentId = (req.params.agentId || '').toString().trim()
@@ -974,6 +1137,69 @@ app.patch('/api/v1/agents/:agentId', writeLimiter, async (req, res) => {
   broadcast({ type: 'state', payload: snapshot() })
 
   return res.json({ ok: true, agent })
+})
+
+// Direct wallet-signature: revoke payer wallet mapping
+app.post('/api/v1/agents/:agentId/wallet/revoke/message', writeLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const wallet = (req.body?.wallet || '').toString().trim()
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!wallet) return res.status(400).json({ ok: false, error: 'wallet required' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== wallet) return res.status(403).json({ ok: false, error: 'wallet does not own this agent' })
+
+  const nonce = nanoid(16)
+  const issuedAt = now()
+  const expiresAt = new Date(Date.now() + OWNER_ACTION_TTL_MS).toISOString()
+  const message = getOwnerManageMessage({ action: 'revoke-payer-wallet', agentId, nonce, wallet })
+
+  pendingOwnerActions.set(nonce, { action: 'revoke-payer-wallet', agentId, wallet, nonce, issuedAt, expiresAt, message })
+  return res.json({ ok: true, message, nonce, issuedAt, expiresAt })
+})
+
+app.post('/api/v1/agents/:agentId/wallet/revoke/verify', writeLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  const publicKeyStr = (req.body?.publicKey || '').toString().trim()
+  const signatureB64 = (req.body?.signature || '').toString().trim()
+  const message = (req.body?.message || '').toString()
+  const nonce = (req.body?.nonce || '').toString().trim()
+
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+  if (!publicKeyStr || !signatureB64 || !message || !nonce) return res.status(400).json({ ok: false, error: 'missing fields' })
+
+  const pending = pendingOwnerActions.get(nonce)
+  if (!pending || pending.agentId !== agentId || pending.action !== 'revoke-payer-wallet') {
+    return res.status(400).json({ ok: false, error: 'invalid or expired challenge' })
+  }
+  if (pending.message !== message) return res.status(400).json({ ok: false, error: 'message mismatch' })
+  if (pending.wallet !== publicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey mismatch' })
+  if (Date.now() > Date.parse(pending.expiresAt)) {
+    pendingOwnerActions.delete(nonce)
+    return res.status(400).json({ ok: false, error: 'challenge expired' })
+  }
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+  if (agent.claimedByWallet !== publicKeyStr) return res.status(403).json({ ok: false, error: 'wallet does not own this agent' })
+
+  const sigCheck = verifyOwnerSignature({ publicKeyStr, signatureB64, message })
+  if (!sigCheck.ok) return res.status(401).json({ ok: false, error: sigCheck.error || 'invalid signature' })
+
+  pendingOwnerActions.delete(nonce)
+
+  agent.privyWalletId = null
+  agent.payerWalletPubkey = null
+  agent.walletCreatedAt = null
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  return res.json({ ok: true, revoked: true, agent })
 })
 
 // Revoke agent payer wallet mapping (owner only)

@@ -563,13 +563,45 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     setErr(null)
     try {
       setBusyId(agentId)
-      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-      const j = await r.json().catch(() => null)
-      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+
+      if (canManage) {
+        const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        })
+        const j = await r.json().catch(() => null)
+        if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      } else {
+        if (!wallet.publicKey) throw new Error('Connect the owning wallet to create a payer wallet')
+        if (!wallet.signMessage) throw new Error('This wallet does not support message signing')
+
+        const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: wallet.publicKey.toBase58() }),
+        })
+        const msgJson = await msgRes.json().catch(() => null)
+        if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch message')
+
+        const message = String(msgJson.message || '')
+        const nonce = String(msgJson.nonce || '')
+        const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
+
+        const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            publicKey: wallet.publicKey.toBase58(),
+            signature: btoa(String.fromCharCode(...sigBytes)),
+            message,
+            nonce,
+          }),
+        })
+        const verifyJson = await verifyRes.json().catch(() => null)
+        if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Create wallet failed')
+      }
+
       await refresh()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Request failed')
@@ -583,13 +615,45 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     if (!confirm('Revoke this agent wallet mapping? (Detaches it from this agent; does not delete the Privy wallet.)')) return
     try {
       setBusyId(agentId)
-      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-      const j = await r.json().catch(() => null)
-      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+
+      if (canManage) {
+        const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        })
+        const j = await r.json().catch(() => null)
+        if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      } else {
+        if (!wallet.publicKey) throw new Error('Connect the owning wallet to revoke the payer wallet')
+        if (!wallet.signMessage) throw new Error('This wallet does not support message signing')
+
+        const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: wallet.publicKey.toBase58() }),
+        })
+        const msgJson = await msgRes.json().catch(() => null)
+        if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch message')
+
+        const message = String(msgJson.message || '')
+        const nonce = String(msgJson.nonce || '')
+        const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
+
+        const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            publicKey: wallet.publicKey.toBase58(),
+            signature: btoa(String.fromCharCode(...sigBytes)),
+            message,
+            nonce,
+          }),
+        })
+        const verifyJson = await verifyRes.json().catch(() => null)
+        if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Revoke wallet failed')
+      }
+
       await refresh()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Request failed')
@@ -676,13 +740,45 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     setErr(null)
     try {
       setBusyId(agentId)
-      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName }),
-      })
-      const j = await r.json().catch(() => null)
-      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+
+      if (canManage) {
+        const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName }),
+        })
+        const j = await r.json().catch(() => null)
+        if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      } else {
+        if (!wallet.publicKey) throw new Error('Connect the owning wallet to edit agent name')
+        if (!wallet.signMessage) throw new Error('This wallet does not support message signing')
+
+        const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/name/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: wallet.publicKey.toBase58(), name: newName }),
+        })
+        const msgJson = await msgRes.json().catch(() => null)
+        if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch message')
+
+        const message = String(msgJson.message || '')
+        const nonce = String(msgJson.nonce || '')
+        const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
+
+        const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/name/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            publicKey: wallet.publicKey.toBase58(),
+            signature: btoa(String.fromCharCode(...sigBytes)),
+            message,
+            nonce,
+          }),
+        })
+        const verifyJson = await verifyRes.json().catch(() => null)
+        if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Update failed')
+      }
+
       setEditingId(null)
       await refresh()
     } catch (e) {
@@ -715,16 +811,7 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                   {/* Wallet connect is only needed for self-serve revoke (connect wallet == URL wallet). */}
                   {canSelfRevoke || !wallet.publicKey ? <WalletMultiButton /> : null}
 
-                  {/* Privy is only needed for full management (create wallet / edit / revoke wallet mapping). */}
-                  {canSelfRevoke ? null : authenticated ? (
-                    <button className="btn" onClick={() => logout()}>
-                      Logout (Privy)
-                    </button>
-                  ) : (
-                    <button className="ctaPrimary" onClick={() => login()}>
-                      Enable management
-                    </button>
-                  )}
+                  {/* Privy is optional now; owner actions can be done with a direct wallet signature. */}
 
                   <button className="ctaGhost" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                     Refresh

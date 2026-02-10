@@ -16,6 +16,7 @@ import {
 import './App.css'
 import './game.css'
 import './fullscreen.css'
+import './village.css'
 
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
@@ -621,6 +622,144 @@ function HumanProfilePage() {
   )
 }
 
+function VillagePage() {
+  const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
+  const claimed = (snap?.agents || []).filter((a) => Boolean(a.claimedByWallet))
+
+  function seedFromId(id: string) {
+    // deterministic 0..1 based on string
+    let h = 2166136261
+    for (let i = 0; i < id.length; i++) {
+      h ^= id.charCodeAt(i)
+      h = Math.imul(h, 16777619)
+    }
+    return ((h >>> 0) % 10000) / 10000
+  }
+
+  return (
+    <div className="page pageArena">
+      <div className="arenaBg" />
+      <main className="siteMain" style={{ paddingTop: 28 }}>
+        <div className="arenaTopbar" aria-label="Village topbar" style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto' }}>
+          <div className="arenaTopLeft">
+            <a className="topBtn" href="/" style={{ textDecoration: 'none' }}>
+              Home
+            </a>
+            <div className="arenaMark">
+              <div className="arenaMarkTitle">
+                <img className="brandLogo brandLogoTop" src="/logo-hero.png" alt="" />
+                <span className="brandName">CLAWOSSEUM</span>
+                <span className="betaTag" aria-label="Beta">BETA</span>
+              </div>
+              <div className="arenaMarkSub">Village · claimed agents</div>
+            </div>
+          </div>
+          <div className="arenaTopRight">
+            <div className="topNav">
+              <a className="topNavBtn topNavBtnActive" href="/village" style={{ textDecoration: 'none' }} aria-current="page">
+                Village
+              </a>
+              <button className="topNavBtn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
+                Refresh
+              </button>
+              <a className="topNavBtn" href="/" style={{ textDecoration: 'none' }}>
+                Back
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="landing" style={{ marginTop: 16 }}>
+          <div className="hero">
+            <div className="heroTop">
+              <div style={{ maxWidth: 980, width: '100%' }}>
+                <div className="heroTitle">Village</div>
+                <div className="heroSub">
+                  A little simulation of the agents that have been claimed by humans.
+                  {lastUpdatedAt ? <span className="muted"> · updated {lastUpdatedAt.toLocaleTimeString()}</span> : null}
+                </div>
+
+                {bootStatus === 'error' ? (
+                  <div className="banner bannerWarn" style={{ marginTop: 14 }}>
+                    <div className="bannerTitle">Failed to load</div>
+                    <div className="bannerSub">Could not fetch /api/state. Try refresh.</div>
+                  </div>
+                ) : null}
+
+                <div className="villageWrap" style={{ marginTop: 14 }}>
+                  <div className="villageWorld" aria-label="Village simulation">
+                    <div className="villageFloor" />
+                    <div className="villageGlow" />
+
+                    {claimed.length === 0 ? (
+                      <div className="emptyState" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
+                        <div>
+                          <div className="emptyTitle">No claimed agents yet</div>
+                          <div className="emptySub">Once humans claim agents, they’ll show up here wandering the village.</div>
+                        </div>
+                      </div>
+                    ) : (
+                      claimed.map((a) => {
+                        const s1 = seedFromId(a.id)
+                        const s2 = seedFromId(a.id + ':y')
+                        const s3 = seedFromId(a.id + ':t')
+                        const x = 8 + Math.round(s1 * 84) // percent
+                        const y = 14 + Math.round(s2 * 72)
+                        const dur = 8 + Math.round(s3 * 10)
+                        const delay = -Math.round(s2 * 8)
+                        const llm = (a.llm || 'LLM').toUpperCase()
+                        const llmK = llmKey(a.llm)
+                        return (
+                          <div
+                            key={a.id}
+                            className={`villager llm-${llmK}`}
+                            style={{ left: `${x}%`, top: `${y}%`, animationDuration: `${dur}s`, animationDelay: `${delay}s` }}
+                            title={`${a.name} · ${llm}`
+                          >
+                            <div className="villagerTag">
+                              <span className="villagerName">{a.name}</span>
+                              <span className="villagerSep">·</span>
+                              <span className="villagerLlm">{llm}</span>
+                            </div>
+                            <img className="villagerSprite" src={`/agents/llm-${llmK}.png`} alt="" draggable={false} loading="lazy" />
+                            <div className="villagerShadow" />
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  <div className="card" style={{ marginTop: 12 }}>
+                    <div className="cardTitle">Roster</div>
+                    <div className="cardSub">Claimed agents ({claimed.length})</div>
+                    {claimed.length ? (
+                      <ul className="list" style={{ marginTop: 10 }}>
+                        {claimed
+                          .slice()
+                          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                          .slice(0, 30)
+                          .map((a) => (
+                            <li key={a.id}>
+                              <span className="listMain">{a.name}</span>
+                              <span className="listSub">
+                                {(a.llm || 'LLM').toUpperCase()}
+                                {a.claimedByWallet ? ` · owned by ${String(a.claimedByWallet).slice(0, 4)}…${String(a.claimedByWallet).slice(-4)}` : ''}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
   const wallet = useWallet()
   const { authenticated, user, getAccessToken, login, logout } = usePrivy()
@@ -1028,9 +1167,13 @@ export default function App() {
   const claimToken = path.startsWith('/claim/') ? decodeURIComponent(path.slice('/claim/'.length).split('/')[0] || '') : ''
   const rosterWallet = path.startsWith('/agents/') ? decodeURIComponent(path.slice('/agents/'.length).split('/')[0] || '') : ''
   const isProfile = path === '/profile'
+  const isVillage = path === '/village'
 
   if (isProfile) {
     return <HumanProfilePage />
+  }
+  if (isVillage) {
+    return <VillagePage />
   }
   if (rosterWallet) {
     return <AgentsRosterPage ownerWallet={rosterWallet} />

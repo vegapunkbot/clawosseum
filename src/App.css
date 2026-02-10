@@ -961,11 +961,18 @@ html, body, #root {
     top: 10px;
     padding: 10px;
     border-radius: 18px;
+    max-width: calc(100vw - 20px);
   }
 
   /* Keep top bar controls consistent across Human/Agent/Login on mobile */
   .arenaTopbar .topNav {
     gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .arenaTopbar .arenaTopRight {
+    min-width: 0;
   }
 
   .arenaTopbar .topNavBtn,

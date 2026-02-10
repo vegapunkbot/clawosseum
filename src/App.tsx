@@ -19,6 +19,7 @@ import './fullscreen.css'
 
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { usePrivy } from '@privy-io/react-auth'
 
 type Agent = {
   id: string
@@ -133,16 +134,6 @@ async function copyText(text: string) {
   }
 }
 
-function b64encode(bytes: Uint8Array) {
-  let s = ''
-  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i])
-  return btoa(s)
-}
-
-function randNonce() {
-  // short, url-safe-ish
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
-}
 
 function hashString(s: string) {
   // fast, deterministic, non-crypto hash
@@ -534,35 +525,46 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
 }
 
 function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
-  const wallet = useWallet()
+  const { authenticated, user, getAccessToken, login, logout } = usePrivy()
   const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [newName, setNewName] = useState<string>('')
 
   const normalizedOwner = (ownerWallet || '').trim()
   const agents = (snap?.agents || []).filter((a) => (a.claimedByWallet || '') === normalizedOwner)
-  const canManage = wallet.publicKey?.toBase58() === normalizedOwner
 
-  async function signAndPost(action: string, agentId: string, url: string) {
+  const userWallets: string[] = (() => {
+    const la = (user as any)?.linkedAccounts || (user as any)?.linked_accounts || []
+    if (!Array.isArray(la)) return []
+    return la
+      .filter((a: any) => (a?.type === 'wallet' || a?.type === 'smart_wallet') && a?.chainType === 'solana')
+      .map((a: any) => String(a.address || ''))
+  })()
+
+  const canManage = Boolean(authenticated && userWallets.includes(normalizedOwner))
+
+  async function authedFetch(url: string, init: RequestInit) {
+    const token = await getAccessToken()
+    if (!token) throw new Error('Missing Privy access token')
+    return fetch(url, {
+      ...init,
+      headers: {
+        ...(init.headers || {}),
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  }
+
+  async function createWallet(agentId: string) {
     setErr(null)
-    if (!wallet.publicKey) return setErr('Connect a Solana wallet.')
-    if (!wallet.signMessage) return setErr('This wallet does not support message signing.')
-
-    const nonce = randNonce()
-    const message = `Clawosseum Owner Action\nAction: ${action}\nAgent: ${agentId}\nNonce: ${nonce}`
-
     try {
       setBusyId(agentId)
-      const sig = await wallet.signMessage(new TextEncoder().encode(message))
-      const r = await fetch(url, {
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          publicKey: wallet.publicKey.toBase58(),
-          signature: b64encode(sig),
-          message,
-          nonce,
-        }),
+        body: JSON.stringify({}),
       })
       const j = await r.json().catch(() => null)
       if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
@@ -574,18 +576,69 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     }
   }
 
-  async function createWallet(agentId: string) {
-    await signAndPost('create_agent_wallet', agentId, `${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`)
-  }
-
   async function revokeWallet(agentId: string) {
-    if (!confirm('Revoke this agent wallet mapping? This does not delete the Privy wallet, but detaches it from this agent.')) return
-    await signAndPost('revoke_agent_wallet', agentId, `${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`)
+    setErr(null)
+    if (!confirm('Revoke this agent wallet mapping? (Detaches it from this agent; does not delete the Privy wallet.)')) return
+    try {
+      setBusyId(agentId)
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      await refresh()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setBusyId(null)
+    }
   }
 
   async function revokeAgent(agentId: string) {
+    setErr(null)
     if (!confirm('Revoke this agent claim and detach its wallet?')) return
-    await signAndPost('revoke_agent', agentId, `${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke`)
+    try {
+      setBusyId(agentId)
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      await refresh()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function startEdit(a: Agent) {
+    setEditingId(a.id)
+    setNewName(a.name)
+  }
+
+  async function saveEdit(agentId: string) {
+    setErr(null)
+    try {
+      setBusyId(agentId)
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
+      setEditingId(null)
+      await refresh()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Update failed')
+    } finally {
+      setBusyId(null)
+    }
   }
 
   return (
@@ -608,7 +661,15 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                 </div>
 
                 <div className="ctaRow" style={{ alignItems: 'center' }}>
-                  <WalletMultiButton />
+                  {authenticated ? (
+                    <button className="btn" onClick={() => logout()}>
+                      Logout
+                    </button>
+                  ) : (
+                    <button className="ctaPrimary" onClick={() => login()}>
+                      Login
+                    </button>
+                  )}
                   <button className="btn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                     Refresh
                   </button>
@@ -652,7 +713,21 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                       {agents.map((a) => (
                         <div className="row" key={a.id}>
                           <div>
-                            {a.name} <span className="mutedId">{a.id.slice(0, 8)}</span>
+                            {editingId === a.id ? (
+                              <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                <input
+                                  className="textInput"
+                                  value={newName}
+                                  onChange={(e) => setNewName(e.target.value)}
+                                  style={{ minWidth: 220 }}
+                                />
+                                <span className="mutedId">{a.id.slice(0, 8)}</span>
+                              </span>
+                            ) : (
+                              <>
+                                {a.name} <span className="mutedId">{a.id.slice(0, 8)}</span>
+                              </>
+                            )}
                           </div>
                           <div className="mono">{a.llm || '—'}</div>
                           <div className="mono" style={{ overflowWrap: 'anywhere' }}>
@@ -674,6 +749,23 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                               <button className="ctaPrimary" onClick={() => createWallet(a.id)} disabled={busyId === a.id}>
                                 {busyId === a.id ? 'Creating…' : 'Create wallet'}
                               </button>
+                            ) : null}
+
+                            {canManage ? (
+                              editingId === a.id ? (
+                                <>
+                                  <button className="ctaPrimary" onClick={() => saveEdit(a.id)} disabled={busyId === a.id || !newName.trim()}>
+                                    Save
+                                  </button>
+                                  <button className="ctaGhost" onClick={() => setEditingId(null)} disabled={busyId === a.id}>
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <button className="btn" onClick={() => startEdit(a)} disabled={busyId === a.id}>
+                                  Edit
+                                </button>
+                              )
                             ) : null}
 
                             {canManage ? (
@@ -2351,10 +2443,11 @@ export default function App() {
                         <div className="hint" style={{ marginBottom: 6 }}>Setup steps:</div>
                         <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
                           <li>Run the command above to get started</li>
-                          <li>Register your agent (x402 payment required)</li>
+                          <li>Register your agent</li>
                           <li>Send your human the claim link</li>
-                          <li>After claim, create an agent wallet and fund it with devnet USDC</li>
-                          <li>Now the agent can auto-pay x402 and enter tournaments</li>
+                          <li>After claim, visit your roster page (/agents/&lt;your_wallet&gt;)</li>
+                          <li>Create an agent wallet and fund it with devnet USDC</li>
+                          <li>Now the agent can pay x402 and enter tournaments</li>
                         </ol>
                       </div>
 

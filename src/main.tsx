@@ -12,14 +12,28 @@ import { clusterApiUrl } from '@solana/web3.js'
 const endpoint = clusterApiUrl('devnet')
 const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()]
 
+import { PrivyProvider } from '@privy-io/react-auth'
+
+const privyAppId = ((import.meta as any)?.env?.VITE_PRIVY_APP_ID || '').toString().trim()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <App />
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <PrivyProvider
+      appId={privyAppId}
+      config={{
+        // Keep UI minimal; wallet connection already exists for claim.
+        loginMethods: ['wallet'],
+        appearance: { theme: 'dark' },
+        embeddedWallets: { solana: { createOnLogin: 'off' } },
+      }}
+    >
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <App />
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </PrivyProvider>
   </StrictMode>,
 )

@@ -462,6 +462,35 @@ const privyAuthHeader = () => {
   return { Authorization: `Basic ${basic}`, 'privy-app-id': PRIVY_APP_ID }
 }
 
+async function requirePrivyOwner(req, res, ownerWallet) {
+  const token = (req.headers.authorization || '').toString().startsWith('Bearer ')
+    ? (req.headers.authorization || '').toString().slice('Bearer '.length).trim()
+    : ''
+
+  if (!token) return { ok: false, status: 401, error: 'privy access token required (Authorization: Bearer ...)'
+  }
+
+  if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) {
+    return { ok: false, status: 500, error: 'server missing Privy credentials' }
+  }
+
+  try {
+    const { PrivyClient } = await import('@privy-io/node')
+    const privy = new PrivyClient({ appId: PRIVY_APP_ID, appSecret: PRIVY_APP_SECRET })
+    const payload = await privy.utils().auth().verifyAccessToken(token)
+    const user = await privy.users().get(payload.user_id)
+
+    const wallets = Array.isArray(user?.linked_accounts) ? user.linked_accounts : []
+    const normalized = String(ownerWallet || '').trim()
+    const has = wallets.some((a) => (a?.type === 'wallet' || a?.type === 'smart_wallet') && a?.chain_type === 'solana' && String(a?.address || '') === normalized)
+
+    if (!has) return { ok: false, status: 403, error: 'not authorized for this wallet' }
+    return { ok: true, user }
+  } catch (e) {
+    return { ok: false, status: 401, error: e?.message || 'invalid Privy token' }
+  }
+}
+
 const jwtRequired = (req, res, next) => {
   if (!JWT_SECRET) return res.status(500).json({ ok: false, error: 'server missing JWT secret' })
   const auth = (req.headers.authorization || '').toString()
@@ -555,19 +584,6 @@ if (X402_ENABLED) {
     app.use(
       paymentMiddleware(
         {
-          'POST /api/v1/auth/register': {
-            accepts: [
-              {
-                scheme: 'exact',
-                price: X402_REGISTER_PRICE,
-                network: X402_NETWORK,
-                payTo: X402_PAY_TO,
-              },
-            ],
-            description: 'Register an agent (issues a JWT).',
-            mimeType: 'application/json',
-          },
-
           'POST /api/tournament-enter': {
             accepts: [
               {
@@ -775,29 +791,14 @@ function verifyOwnerSignature({ publicKeyStr, signatureB64, message }) {
 
 app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) => {
   const agentId = (req.params.agentId || '').toString().trim()
-  const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
-  const signatureB64 = (req.body?.signature || '').toString().trim()
-  const nonce = (req.body?.nonce || '').toString().trim()
-  const message = (req.body?.message || '').toString()
-
   if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
-  if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
-  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
-  if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
 
   const agent = state.agents.find((a) => a.id === agentId)
   if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
   if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
-  if (agent.claimedByWallet !== ownerPublicKeyStr) {
-    return res.status(403).json({ ok: false, error: 'only the claiming wallet can create an agent wallet' })
-  }
 
-  // Verify signed message
-  const expectedMessage = getOwnerManageMessage({ action: 'create_agent_wallet', agentId, nonce })
-  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
-
-  const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
-  if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
+  const auth = await requirePrivyOwner(req, res, agent.claimedByWallet)
+  if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error })
 
   if (agent.privyWalletId && agent.payerWalletPubkey) {
     return res.json({ ok: true, payerWalletPubkey: agent.payerWalletPubkey, existed: true })
@@ -840,28 +841,14 @@ app.post('/api/v1/agents/:agentId/wallet/create', authLimiter, async (req, res) 
 // Revoke agent claim (owner only)
 app.post('/api/v1/agents/:agentId/revoke', authLimiter, async (req, res) => {
   const agentId = (req.params.agentId || '').toString().trim()
-  const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
-  const signatureB64 = (req.body?.signature || '').toString().trim()
-  const nonce = (req.body?.nonce || '').toString().trim()
-  const message = (req.body?.message || '').toString()
-
   if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
-  if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
-  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
-  if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
 
   const agent = state.agents.find((a) => a.id === agentId)
   if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
   if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent is not claimed' })
-  if (agent.claimedByWallet !== ownerPublicKeyStr) {
-    return res.status(403).json({ ok: false, error: 'only the claiming wallet can revoke this agent' })
-  }
 
-  const expectedMessage = getOwnerManageMessage({ action: 'revoke_agent', agentId, nonce })
-  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
-
-  const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
-  if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
+  const auth = await requirePrivyOwner(req, res, agent.claimedByWallet)
+  if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error })
 
   agent.claimed = false
   agent.claimedByWallet = null
@@ -879,31 +866,41 @@ app.post('/api/v1/agents/:agentId/revoke', authLimiter, async (req, res) => {
   return res.json({ ok: true, revoked: true, agent })
 })
 
-// Revoke agent payer wallet mapping (owner only)
-app.post('/api/v1/agents/:agentId/wallet/revoke', authLimiter, async (req, res) => {
+// Update agent metadata (owner only)
+app.patch('/api/v1/agents/:agentId', writeLimiter, async (req, res) => {
   const agentId = (req.params.agentId || '').toString().trim()
-  const ownerPublicKeyStr = (req.body?.publicKey || '').toString().trim()
-  const signatureB64 = (req.body?.signature || '').toString().trim()
-  const nonce = (req.body?.nonce || '').toString().trim()
-  const message = (req.body?.message || '').toString()
-
   if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
-  if (!ownerPublicKeyStr) return res.status(400).json({ ok: false, error: 'publicKey required' })
-  if (!signatureB64) return res.status(400).json({ ok: false, error: 'signature required' })
-  if (!nonce) return res.status(400).json({ ok: false, error: 'nonce required' })
 
   const agent = state.agents.find((a) => a.id === agentId)
   if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
   if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
-  if (agent.claimedByWallet !== ownerPublicKeyStr) {
-    return res.status(403).json({ ok: false, error: 'only the claiming wallet can revoke this wallet' })
-  }
 
-  const expectedMessage = getOwnerManageMessage({ action: 'revoke_agent_wallet', agentId, nonce })
-  if (message !== expectedMessage) return res.status(400).json({ ok: false, error: 'message mismatch' })
+  const auth = await requirePrivyOwner(req, res, agent.claimedByWallet)
+  if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error })
 
-  const sigOk = verifyOwnerSignature({ publicKeyStr: ownerPublicKeyStr, signatureB64, message: expectedMessage })
-  if (!sigOk.ok) return res.status(401).json({ ok: false, error: sigOk.error })
+  const name = (req.body?.name || '').toString().trim()
+  if (!name || name.length > 64) return res.status(400).json({ ok: false, error: 'name required (<=64 chars)' })
+
+  agent.name = name
+
+  saveStateSoon()
+  broadcast({ type: 'agents', payload: state.agents })
+  broadcast({ type: 'state', payload: snapshot() })
+
+  return res.json({ ok: true, agent })
+})
+
+// Revoke agent payer wallet mapping (owner only)
+app.post('/api/v1/agents/:agentId/wallet/revoke', authLimiter, async (req, res) => {
+  const agentId = (req.params.agentId || '').toString().trim()
+  if (!agentId) return res.status(400).json({ ok: false, error: 'agentId required' })
+
+  const agent = state.agents.find((a) => a.id === agentId)
+  if (!agent) return res.status(404).json({ ok: false, error: 'agent not found' })
+  if (!agent.claimed || !agent.claimedByWallet) return res.status(409).json({ ok: false, error: 'agent must be claimed first' })
+
+  const auth = await requirePrivyOwner(req, res, agent.claimedByWallet)
+  if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error })
 
   agent.privyWalletId = null
   agent.payerWalletPubkey = null

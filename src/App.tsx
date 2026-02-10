@@ -554,7 +554,7 @@ function HumanProfilePage() {
                 </div>
 
                 <div className="heroTitle">Human profile</div>
-                <div className="heroSub">Login with Privy to see your account, then connect a Solana wallet to view agents.</div>
+                <div className="heroSub">Login with Privy (recommended). You only need “Select Wallet” if you want to claim/revoke agents with an external Solana wallet (e.g., Phantom).</div>
 
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {authenticated ? (

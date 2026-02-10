@@ -1147,6 +1147,13 @@ export default function App() {
   const rosterWallet = path.startsWith('/agents/') ? decodeURIComponent(path.slice('/agents/'.length).split('/')[0] || '') : ''
   const isProfile = path === '/profile'
   const isVillage = path === '/village'
+  const isArenaRoute = path === '/arena'
+
+  // Back-compat: old spectator link routed to '/' and scrolled.
+  // Now we want a shareable /arena route.
+  if (path === '/spectate') {
+    window.location.replace('/arena')
+  }
 
   if (isProfile) {
     return <HumanProfilePage />
@@ -1170,11 +1177,11 @@ export default function App() {
     }
   }, [theme])
 
-  const [view, setView] = useState<'landing' | 'arena'>('landing')
+  const [view, setView] = useState<'landing' | 'arena'>(() => (isArenaRoute ? 'arena' : 'landing'))
   const [demoOn, setDemoOn] = useState(false)
   const [demoAutoDisabled, setDemoAutoDisabled] = useState(false)
 
-  const [arenaTab, setArenaTab] = useState<'live' | 'setup' | 'fees' | 'spectate'>('live')
+  const [arenaTab, setArenaTab] = useState<'live' | 'setup' | 'fees' | 'spectate'>(() => (isArenaRoute ? 'live' : 'live'))
   const [arenaMenuOpen, setArenaMenuOpen] = useState(false)
   const [livePane, setLivePane] = useState<'arena' | 'timeline' | 'roster' | 'matches'>('arena')
 
@@ -2116,13 +2123,7 @@ export default function App() {
                       <button
                         className="ctaPrimary"
                         onClick={() => {
-                          setDemoOn(false)
-                          setView('arena')
-                          setArenaTab('live')
-                          setLivePane('arena')
-                          window.setTimeout(() => {
-                            document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                          }, 0)
+                          window.location.href = '/arena'
                         }}
                       >
                         <span className="btnIcon" aria-hidden="true"><TargetIcon /></span>
@@ -2133,12 +2134,7 @@ export default function App() {
                         className="ctaGhost"
                         onClick={() => {
                           setDemoOn(true)
-                          setView('arena')
-                          setArenaTab('live')
-                          setLivePane('arena')
-                          window.setTimeout(() => {
-                            document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                          }, 0)
+                          window.location.href = '/arena'
                         }}
                       >
                         <span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>
@@ -2353,9 +2349,9 @@ export default function App() {
 
           <div className="arenaTopbar" aria-label="Arena topbar">
             <div className="arenaTopLeft">
-              <button className="topBtn" onClick={() => setView('landing')}>
+              <a className="topBtn" href="/" style={{ textDecoration: 'none' }}>
                 Home
-              </button>
+              </a>
               <div className="arenaMark">
                 <div className="arenaMarkTitle">
                   <img
@@ -2469,7 +2465,7 @@ export default function App() {
                           document.getElementById('arenaSpectator')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         role="menuitem"
-                      ><span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>Spectator link</button>
+                      ><span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>Arena link</button>
                       <div className="menuDivider" role="separator" />
                       <button
                         className={presentMode ? 'menuItem menuItemActive' : 'menuItem'}
@@ -3036,16 +3032,16 @@ export default function App() {
 
               <div id="arenaSpectator" className="hudSection" style={{ marginTop: 18 }} data-tab="spectate">
                 <div className="sectionHeader">
-                  <div className="sectionTitle">Spectator link</div>
-                  <div className="sectionHint">Share the arena (read-only)</div>
+                  <div className="sectionTitle">Arena link</div>
+                  <div className="sectionHint">Share the arena (spectate live)</div>
                 </div>
 
                 <div className="hudGrid">
                   <div className="panel">
-                    <div className="panelTitle">Spectator link</div>
+                    <div className="panelTitle">Arena link</div>
                     <div className="panelBody">
-                      <div className="hint">Share this page with humans (read-only).</div>
-                      <CommandRow label="URL" cmd={window.location.origin + '/'} />
+                      <div className="hint">Share this link so others can spectate live fights.</div>
+                      <CommandRow label="URL" cmd={window.location.origin + '/arena'} />
                     </div>
                   </div>
                 </div>

@@ -2558,7 +2558,7 @@ export default function App() {
                 </div>
               ) : null}
 
-              {fighters && arenaTab !== 'setup' ? (
+              {fighters && arenaTab === 'live' ? (
                 <div className={`fightBanner ${activeMatch?.status === 'running' ? 'fightBannerLive' : ''}`}>
                   <div className="fightBannerTop">
                     <span className="fightTag">{activeMatch?.status === 'running' ? 'NOW FIGHTING' : 'MATCH'}</span>

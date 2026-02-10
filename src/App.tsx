@@ -13,6 +13,7 @@ import {
   HomeIcon,
   SunIcon,
   TargetIcon,
+  PlayIcon,
 } from '@radix-ui/react-icons'
 import './App.css'
 import './game.css'
@@ -613,11 +614,44 @@ function VillagePage() {
   const claimed = (snap?.agents || []).filter((a) => Boolean(a.claimedByWallet))
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const selected = selectedId ? (snap?.agents || []).find((a) => a.id === selectedId) || null : null
+  const [villageDemo, setVillageDemo] = useState(() => {
+    try {
+      return window.localStorage.getItem('clawosseum_village_demo') === '1'
+    } catch {
+      return false
+    }
+  })
+  const [villageFullscreen, setVillageFullscreen] = useState(false)
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('clawosseum_village_demo', villageDemo ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }, [villageDemo])
+
+  const demoAgents: Agent[] = useMemo(() => {
+    if (!villageDemo) return []
+    const nowIso = new Date().toISOString()
+    return [
+      { id: 'demo-v-01', name: 'Vega', llm: 'claude', createdAt: nowIso, claimed: true, claimedByWallet: 'demo' },
+      { id: 'demo-v-02', name: 'Orion', llm: 'gpt', createdAt: nowIso, claimed: true, claimedByWallet: 'demo' },
+      { id: 'demo-v-03', name: 'Nyx', llm: 'gemini', createdAt: nowIso, claimed: true, claimedByWallet: 'demo' },
+      { id: 'demo-v-04', name: 'Atlas', llm: 'grok', createdAt: nowIso, claimed: true, claimedByWallet: 'demo' },
+      { id: 'demo-v-05', name: 'Ember', llm: 'claude', createdAt: nowIso, claimed: true, claimedByWallet: 'demo' },
+    ]
+  }, [villageDemo])
+
+  const villagers = (claimed.length ? claimed : villageDemo ? demoAgents : [])
+
+  const selected = selectedId ? villagers.find((a) => a.id === selectedId) || null : null
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setSelectedId(null)
+      if (e.key === 'Escape') {
+        setSelectedId(null)
+        setVillageFullscreen(false)
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -634,7 +668,7 @@ function VillagePage() {
   }
 
   return (
-    <div className="page pageArena">
+    <div className={villageFullscreen ? 'page pageArena villageFullscreenOn' : 'page pageArena'}>
       <div className="arenaBg" />
       <main className="siteMain" style={{ paddingTop: 28 }}>
         <div className="arenaTopbar" aria-label="Village topbar" style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto' }}>
@@ -657,6 +691,14 @@ function VillagePage() {
                 <span className="btnIcon" aria-hidden="true"><HomeIcon /></span>
                 Village
               </a>
+              <button className={villageDemo ? 'topNavBtn topNavBtnActive' : 'topNavBtn'} onClick={() => setVillageDemo((v) => !v)} title="Toggle demo villagers">
+                <span className="btnIcon" aria-hidden="true"><PlayIcon /></span>
+                Demo
+              </button>
+              <button className={villageFullscreen ? 'topNavBtn topNavBtnActive' : 'topNavBtn'} onClick={() => setVillageFullscreen((v) => !v)} title="Fullscreen">
+                <span className="btnIcon" aria-hidden="true">{villageFullscreen ? <ExitFullScreenIcon /> : <EnterFullScreenIcon />}</span>
+                Fullscreen
+              </button>
               <button className="topNavBtn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                 Refresh
               </button>
@@ -689,15 +731,21 @@ function VillagePage() {
                     <div className="villageFloor" />
                     <div className="villageGlow" />
 
-                    {claimed.length === 0 ? (
+                    {villagers.length === 0 ? (
                       <div className="emptyState" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
                         <div>
                           <div className="emptyTitle">No claimed agents yet</div>
                           <div className="emptySub">Once humans claim agents, they’ll show up here wandering the village.</div>
+                          <div className="ctaRow" style={{ marginTop: 14, maxWidth: 320 }}>
+                            <button className="ctaPrimary" onClick={() => setVillageDemo(true)}>
+                              <span className="btnIcon" aria-hidden="true"><PlayIcon /></span>
+                              Try demo
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      claimed.map((a) => {
+                      villagers.map((a) => {
                         const s1 = seedFromId(a.id)
                         const s2 = seedFromId(a.id + ':y')
                         const s3 = seedFromId(a.id + ':t')
@@ -766,10 +814,10 @@ function VillagePage() {
 
                   <div className="card" style={{ marginTop: 12 }}>
                     <div className="cardTitle">Roster</div>
-                    <div className="cardSub">Claimed agents ({claimed.length})</div>
-                    {claimed.length ? (
+                    <div className="cardSub">Agents ({villagers.length})</div>
+                    {villagers.length ? (
                       <ul className="list" style={{ marginTop: 10 }}>
-                        {claimed
+                        {villagers
                           .slice()
                           .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
                           .slice(0, 30)
@@ -778,7 +826,7 @@ function VillagePage() {
                               <span className="listMain">{a.name}</span>
                               <span className="listSub">
                                 {(a.llm || 'LLM').toUpperCase()}
-                                {a.claimedByWallet ? ` · owned by ${String(a.claimedByWallet).slice(0, 4)}…${String(a.claimedByWallet).slice(-4)}` : ''}
+                                {a.claimedByWallet && a.claimedByWallet !== 'demo' ? ` · owned by ${String(a.claimedByWallet).slice(0, 4)}…${String(a.claimedByWallet).slice(-4)}` : ''}
                               </span>
                             </li>
                           ))}

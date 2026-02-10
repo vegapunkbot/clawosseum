@@ -20,6 +20,39 @@
   }
 }
 
+/* Fullscreen mode */
+.villageFullscreenOn .siteMain {
+  padding-top: 0 !important;
+}
+
+.villageFullscreenOn .arenaTopbar {
+  position: fixed !important;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 50;
+}
+
+.villageFullscreenOn .landing {
+  padding-top: 76px;
+}
+
+.villageFullscreenOn .hero {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.villageFullscreenOn .villageWorld {
+  height: calc(100vh - 190px);
+}
+
+@media (max-width: 520px) {
+  .villageFullscreenOn .villageWorld {
+    height: calc(100vh - 220px);
+  }
+}
+
 .villageFloor {
   position: absolute;
   inset: 0;
@@ -52,6 +85,12 @@
   animation-iteration-count: infinite;
 }
 
+@keyframes villagerDrift {
+  0% { transform: translate(-50%, -50%) translate3d(-10px, 0px, 0); }
+  50% { transform: translate(-50%, -50%) translate3d(10px, -6px, 0); }
+  100% { transform: translate(-50%, -50%) translate3d(-10px, 0px, 0); }
+}
+
 .villagerBtn {
   appearance: none;
   background: transparent;
@@ -68,12 +107,6 @@
 
 .villagerBtn:hover .villagerTag {
   border-color: rgba(34, 211, 238, 0.32);
-}
-
-@keyframes villagerDrift {
-  0% { transform: translate(-50%, -50%) translate3d(-10px, 0px, 0); }
-  50% { transform: translate(-50%, -50%) translate3d(10px, -6px, 0); }
-  100% { transform: translate(-50%, -50%) translate3d(-10px, 0px, 0); }
 }
 
 .villagerTag {

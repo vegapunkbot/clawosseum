@@ -42,7 +42,9 @@ createRoot(document.getElementById('root')!).render(
                 },
                 embeddedWallets: {
                   ethereum: { createOnLogin: 'off' },
-                  solana: { createOnLogin: 'off' },
+                  // Create a Privy embedded Solana wallet when a user logs in without one.
+                  // This avoids sending mobile users to install/download pages.
+                  solana: { createOnLogin: 'users-without-wallets' },
                 },
               }}
             >

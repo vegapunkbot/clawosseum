@@ -14,7 +14,14 @@ const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()]
 
 import { PrivyProvider } from '@privy-io/react-auth'
 
-const privyAppId = ((import.meta as any)?.env?.VITE_PRIVY_APP_ID || '').toString().trim()
+// Vite env vars are baked at build-time. On some Railway Docker builds, VITE_* vars are not
+// available during the build stage, which would otherwise blank-screen the app.
+// Privy App ID is *public* (not a secret), so we ship a safe fallback and still allow overrides.
+const privyAppId = (
+  ((import.meta as any)?.env?.VITE_PRIVY_APP_ID || '').toString().trim() ||
+  // Fallback: clawosseum.fun Privy App ID
+  'cmlfobtpl017hl40cni63n7x6'
+)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

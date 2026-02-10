@@ -661,43 +661,15 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     try {
       setBusyId(agentId)
 
-      if (canManage) {
-        const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        })
-        const j = await r.json().catch(() => null)
-        if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
-      } else {
-        if (!wallet.publicKey) throw new Error('Connect the owning wallet to create a payer wallet')
-        if (!wallet.signMessage) throw new Error('This wallet does not support message signing')
+      if (!canManage) throw new Error('Login with Privy (owning wallet) to create a payer wallet')
 
-        const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create/message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: wallet.publicKey.toBase58() }),
-        })
-        const msgJson = await msgRes.json().catch(() => null)
-        if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch message')
-
-        const message = String(msgJson.message || '')
-        const nonce = String(msgJson.nonce || '')
-        const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
-
-        const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            publicKey: wallet.publicKey.toBase58(),
-            signature: btoa(String.fromCharCode(...sigBytes)),
-            message,
-            nonce,
-          }),
-        })
-        const verifyJson = await verifyRes.json().catch(() => null)
-        if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Create wallet failed')
-      }
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
 
       await refresh()
     } catch (e) {
@@ -713,43 +685,15 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     try {
       setBusyId(agentId)
 
-      if (canManage) {
-        const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        })
-        const j = await r.json().catch(() => null)
-        if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
-      } else {
-        if (!wallet.publicKey) throw new Error('Connect the owning wallet to revoke the payer wallet')
-        if (!wallet.signMessage) throw new Error('This wallet does not support message signing')
+      if (!canManage) throw new Error('Login with Privy (owning wallet) to revoke the payer wallet')
 
-        const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke/message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: wallet.publicKey.toBase58() }),
-        })
-        const msgJson = await msgRes.json().catch(() => null)
-        if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch message')
-
-        const message = String(msgJson.message || '')
-        const nonce = String(msgJson.nonce || '')
-        const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
-
-        const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            publicKey: wallet.publicKey.toBase58(),
-            signature: btoa(String.fromCharCode(...sigBytes)),
-            message,
-            nonce,
-          }),
-        })
-        const verifyJson = await verifyRes.json().catch(() => null)
-        if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Revoke wallet failed')
-      }
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/wallet/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
 
       await refresh()
     } catch (e) {
@@ -838,43 +782,15 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     try {
       setBusyId(agentId)
 
-      if (canManage) {
-        const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName }),
-        })
-        const j = await r.json().catch(() => null)
-        if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
-      } else {
-        if (!wallet.publicKey) throw new Error('Connect the owning wallet to edit agent name')
-        if (!wallet.signMessage) throw new Error('This wallet does not support message signing')
+      if (!canManage) throw new Error('Login with Privy (owning wallet) to edit agent name')
 
-        const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/name/message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: wallet.publicKey.toBase58(), name: newName }),
-        })
-        const msgJson = await msgRes.json().catch(() => null)
-        if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch message')
-
-        const message = String(msgJson.message || '')
-        const nonce = String(msgJson.nonce || '')
-        const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
-
-        const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/name/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            publicKey: wallet.publicKey.toBase58(),
-            signature: btoa(String.fromCharCode(...sigBytes)),
-            message,
-            nonce,
-          }),
-        })
-        const verifyJson = await verifyRes.json().catch(() => null)
-        if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Update failed')
-      }
+      const r = await authedFetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      })
+      const j = await r.json().catch(() => null)
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `Failed (${r.status})`)
 
       setEditingId(null)
       await refresh()
@@ -905,10 +821,19 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                 </div>
 
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                  {/* Wallet connect is only needed for self-serve revoke (connect wallet == URL wallet). */}
-                  {canSelfRevoke || !wallet.publicKey ? <WalletMultiButton /> : null}
+                  {/* Privy is the primary auth for management actions. */}
+                  {authenticated ? (
+                    <button className="btn" onClick={() => logout()}>
+                      Logout
+                    </button>
+                  ) : (
+                    <button className="ctaPrimary" onClick={() => login()}>
+                      Login
+                    </button>
+                  )}
 
-                  {/* Privy is optional now; owner actions can be done with a direct wallet signature. */}
+                  {/* Wallet connect is only needed for claim/self-revoke actions. */}
+                  {canSelfRevoke || !wallet.publicKey ? <WalletMultiButton /> : null}
 
                   <button className="ctaGhost" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                     Refresh

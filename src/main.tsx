@@ -18,22 +18,31 @@ const privyAppId = ((import.meta as any)?.env?.VITE_PRIVY_APP_ID || '').toString
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <PrivyProvider
-      appId={privyAppId}
-      config={{
-        // Keep UI minimal; wallet connection already exists for claim.
-        loginMethods: ['wallet'],
-        appearance: { theme: 'dark' },
-        embeddedWallets: { solana: { createOnLogin: 'off' } },
-      }}
-    >
-      <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect>
-          <WalletModalProvider>
-            <App />
-          </WalletModalProvider>
-        </WalletProvider>
-      </ConnectionProvider>
-    </PrivyProvider>
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          {privyAppId ? (
+            <PrivyProvider
+              appId={privyAppId}
+              config={{
+                // Keep UI minimal; wallet connection already exists for claim.
+                loginMethods: ['wallet'],
+                appearance: { theme: 'dark' },
+                embeddedWallets: { solana: { createOnLogin: 'off' } },
+              }}
+            >
+              <App />
+            </PrivyProvider>
+          ) : (
+            <>
+              <div style={{ padding: 12, background: '#3a1a1a', color: '#fff', fontFamily: 'system-ui' }}>
+                Missing VITE_PRIVY_APP_ID. Privy features are disabled until configured.
+              </div>
+              <App />
+            </>
+          )}
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   </StrictMode>,
 )

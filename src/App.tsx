@@ -577,23 +577,18 @@ function HumanProfilePage() {
                     </div>
                   )}
 
-                  <div className="hint" style={{ marginTop: 12 }}>
-                    {primaryWallet ? (
-                      <>
-                        Your roster: <a href={`/agents/${encodeURIComponent(primaryWallet)}`}>/agents/{primaryWallet.slice(0, 4)}…{primaryWallet.slice(-4)}</a>
-                        <div className="ctaRow" style={{ marginTop: 10 }}>
-                          <a className="ctaGhost" href={`/agents/${encodeURIComponent(primaryWallet)}`} style={{ textDecoration: 'none' }}>
-                            Open my agents
-                          </a>
-                          <button className="ctaGhost" onClick={() => copyText(`/agents/${primaryWallet}`)}>
-                            Copy link
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>Login to get your roster link.</>
-                    )}
-                  </div>
+                  {primaryWallet ? (
+                    <div className="ctaRow" style={{ marginTop: 12 }}>
+                      <a className="ctaGhost" href={`/agents/${encodeURIComponent(primaryWallet)}`} style={{ textDecoration: 'none' }}>
+                        Open my agents
+                      </a>
+                      <button className="ctaGhost" onClick={() => copyText(`/agents/${primaryWallet}`)}>
+                        Copy roster link
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="hint" style={{ marginTop: 12 }}>Login to get your roster link.</div>
+                  )}
 
                   <div className="hint" style={{ marginTop: 12 }}>
                     {(() => {

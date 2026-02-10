@@ -625,6 +625,17 @@ function HumanProfilePage() {
 function VillagePage() {
   const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
   const claimed = (snap?.agents || []).filter((a) => Boolean(a.claimedByWallet))
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const selected = selectedId ? (snap?.agents || []).find((a) => a.id === selectedId) || null : null
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSelectedId(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   function seedFromId(id: string) {
     // deterministic 0..1 based on string
@@ -710,11 +721,14 @@ function VillagePage() {
                         const llm = (a.llm || 'LLM').toUpperCase()
                         const llmK = llmKey(a.llm)
                         return (
-                          <div
+                          <button
                             key={a.id}
-                            className={`villager llm-${llmK}`}
+                            type="button"
+                            className={`villager villagerBtn llm-${llmK}`}
                             style={{ left: `${x}%`, top: `${y}%`, animationDuration: `${dur}s`, animationDelay: `${delay}s` }}
-                            title={`${a.name} · ${llm}`
+                            title={`${a.name} · ${llm}`}
+                            aria-label={`Open ${a.name} details`}
+                            onClick={() => setSelectedId(a.id)}
                           >
                             <div className="villagerTag">
                               <span className="villagerName">{a.name}</span>
@@ -723,10 +737,44 @@ function VillagePage() {
                             </div>
                             <img className="villagerSprite" src={`/agents/llm-${llmK}.png`} alt="" draggable={false} loading="lazy" />
                             <div className="villagerShadow" />
-                          </div>
+                          </button>
                         )
                       })
                     )}
+
+                    {selected ? (
+                      <div className="villageModal" role="dialog" aria-modal="true" aria-label="Agent details" onClick={() => setSelectedId(null)}>
+                        <div className="villageModalCard" onClick={(e) => e.stopPropagation()}>
+                          <div className="cardTitle" style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
+                            <span>Agent</span>
+                            <button className="topNavBtn" onClick={() => setSelectedId(null)}>
+                              Close
+                            </button>
+                          </div>
+                          <div className="cardSub" style={{ marginTop: 8 }}>
+                            <span className="mono">{selected.id.slice(0, 8)}</span>
+                          </div>
+
+                          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <div className="villagerTag">
+                              <span className="villagerName">{selected.name}</span>
+                              <span className="villagerSep">·</span>
+                              <span className="villagerLlm">{(selected.llm || 'LLM').toUpperCase()}</span>
+                            </div>
+
+                            {selected.claimedByWallet ? (
+                              <a className="ctaGhost" href={`/agents/${encodeURIComponent(String(selected.claimedByWallet))}`} style={{ textDecoration: 'none' }}>
+                                View owner roster
+                              </a>
+                            ) : null}
+                          </div>
+
+                          <div className="hint" style={{ marginTop: 12 }}>
+                            Click outside (or press Esc) to close.
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="card" style={{ marginTop: 12 }}>
@@ -2058,6 +2106,9 @@ export default function App() {
                       >
                         Payments & prize pool
                       </button>
+                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none' }}>
+                        Village
+                      </a>
                     </div>
                   ) : null}
                 </div>
@@ -2486,6 +2537,9 @@ export default function App() {
                       >
                         Payments & prize pool
                       </button>
+                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none' }}>
+                        Village
+                      </a>
                       <button
                         className={arenaTab === 'spectate' ? 'menuItem menuItemActive' : 'menuItem'}
                         onClick={() => {

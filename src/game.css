@@ -673,68 +673,47 @@
 }
 
 /* --- Arena rim (between sky and crowd) --- */
+/* For now, we remove the rim image and replace it with a clean separator line. */
 .arenaRim {
   position: absolute;
   left: -12%;
   right: -12%;
 
-  /* Top wall: ~1/4 height of the other layers */
   bottom: 288px;
-  height: 34px;
+  height: 18px;
 
   transform: skewX(-8deg);
   pointer-events: none;
   z-index: 4;
 
-  background-image: url('/arena-rim.png');
-  background-repeat: repeat-x;
-  background-size: auto 34px;
-  background-position: center bottom;
+  background: linear-gradient(
+    180deg,
+    rgba(2, 6, 23, 0.05),
+    rgba(2, 6, 23, 0.45)
+  );
 
-  opacity: 0.94;
-  filter: saturate(0.95) contrast(1.05);
+  /* border on top to separate sky from stands */
+  border-top: 2px solid rgba(34, 211, 238, 0.18);
+  box-shadow: 0 -1px 0 rgba(251, 113, 133, 0.10) inset;
 }
 
 .arenaRim::after {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 2px;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(2,6,23,0.22), rgba(2,6,23,0.02) 55%, rgba(2,6,23,0.20));
-  mix-blend-mode: multiply;
+  background: linear-gradient(90deg, rgba(0,0,0,0), rgba(34, 211, 238, 0.35), rgba(0,0,0,0));
+  opacity: 0.75;
 }
 
 /* --- Arena walls (between stands and floor) --- */
-.arenaWalls {
-  position: absolute;
-  left: -12%;
-  right: -12%;
-
-  /* walls sit directly above the floor (slight overlap to avoid any dark seam) */
-  bottom: 84px;
-  height: 120px;
-
-  transform: skewX(-8deg);
-  pointer-events: none;
-  z-index: 2;
-
-  background-image: url('/arena-walls.png');
-  background-repeat: repeat-x;
-  background-size: auto 120px;
-  background-position: center bottom;
-
-  opacity: 0.94;
-  filter: saturate(0.98) contrast(1.05);
-}
-
+/* Temporarily disable the walls layer to simplify the scene. */
+.arenaWalls,
 .arenaWalls::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* subtle top fade to blend into the stands */
-  background: linear-gradient(180deg, rgba(2,6,23,0.00), rgba(2,6,23,0.10));
-  mix-blend-mode: multiply;
+  display: none;
 }
 
 /* --- Arena stands (tessellated crowd) --- */

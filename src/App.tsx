@@ -541,7 +541,7 @@ function HumanProfilePage() {
 
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {authenticated ? (
-                    <button className="ctaGhost" onClick={() => logout()}>
+                    <button className="ctaPrimary" onClick={() => logout()}>
                       Logout
                     </button>
                   ) : (
@@ -947,7 +947,7 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {/* Privy is the primary auth for management actions. */}
                   {authenticated ? (
-                    <button className="ctaGhost" onClick={() => logout()}>
+                    <button className="ctaPrimary" onClick={() => logout()}>
                       Logout
                     </button>
                   ) : (
@@ -1966,7 +1966,7 @@ export default function App() {
 
                 {setupMode === 'human' ? (
                   privyAuthed ? (
-                    <button className="btn" onClick={() => privyLogout()}>
+                    <button className="ctaPrimary" onClick={() => privyLogout()}>
                       Logout
                     </button>
                   ) : (
@@ -2411,7 +2411,7 @@ export default function App() {
 
                 {setupMode === 'human' ? (
                   privyAuthed ? (
-                    <button className="btn" onClick={() => privyLogout()}>
+                    <button className="ctaPrimary" onClick={() => privyLogout()}>
                       Logout
                     </button>
                   ) : (

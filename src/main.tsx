@@ -34,8 +34,16 @@ createRoot(document.getElementById('root')!).render(
               config={{
                 // Keep UI minimal; wallet connection already exists for claim.
                 loginMethods: ['wallet'],
-                appearance: { theme: 'dark' },
-                embeddedWallets: { solana: { createOnLogin: 'off' } },
+                // Force Solana-only wallet UX (avoid SIWE / EVM defaulting).
+                appearance: {
+                  theme: 'dark',
+                  walletChainType: 'solana-only',
+                  walletList: ['detected_solana_wallets', 'phantom', 'solflare', 'backpack'],
+                },
+                embeddedWallets: {
+                  ethereum: { createOnLogin: 'off' },
+                  solana: { createOnLogin: 'off' },
+                },
               }}
             >
               <App />

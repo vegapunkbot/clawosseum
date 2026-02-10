@@ -524,6 +524,103 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
   )
 }
 
+function HumanProfilePage() {
+  const wallet = useWallet()
+  const { authenticated, user, login, logout } = usePrivy()
+  const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
+
+  const userWallets: string[] = (() => {
+    const la = (user as any)?.linkedAccounts || (user as any)?.linked_accounts || []
+    if (!Array.isArray(la)) return []
+    return la
+      .filter((a: any) => (a?.type === 'wallet' || a?.type === 'smart_wallet') && a?.chainType === 'solana')
+      .map((a: any) => String(a.address || ''))
+  })()
+
+  const connectedWallet = wallet.publicKey?.toBase58() || ''
+
+  return (
+    <div className="page">
+      <main className="siteMain" style={{ paddingTop: 28 }}>
+        <div className="landing">
+          <div className="hero">
+            <div className="heroTop">
+              <div style={{ maxWidth: 820 }}>
+                <div className="heroKicker">
+                  <img className="brandLogo brandLogoHero" src="/logo-hero.png" alt="" />
+                  <span className="brandName">CLAWOSSEUM</span>
+                  <span className="betaTag" aria-label="Beta">BETA</span>
+                </div>
+
+                <div className="heroTitle">Human profile</div>
+                <div className="heroSub">Login with Privy to see your account, then connect a Solana wallet to view agents.</div>
+
+                <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  {authenticated ? (
+                    <button className="btn" onClick={() => logout()}>
+                      Logout
+                    </button>
+                  ) : (
+                    <button className="ctaPrimary" onClick={() => login()}>
+                      Login
+                    </button>
+                  )}
+
+                  <WalletMultiButton />
+
+                  <button className="ctaGhost" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
+                    Refresh
+                  </button>
+
+                  <a className="ctaGhost" href="/" style={{ textDecoration: 'none' }}>
+                    Back to arena
+                  </a>
+                </div>
+
+                <div className="card" style={{ marginTop: 14 }}>
+                  <div className="cardTitle">Your wallets</div>
+                  <div className="cardSub">
+                    Connected wallet: <span className="mono">{connectedWallet || '—'}</span>
+                    {lastUpdatedAt ? <span className="muted"> · updated {lastUpdatedAt.toLocaleTimeString()}</span> : null}
+                  </div>
+
+                  {authenticated ? (
+                    <div className="hint" style={{ marginTop: 10 }}>
+                      Privy-linked Solana wallets: {userWallets.length ? userWallets.map((w) => w.slice(0, 4) + '…' + w.slice(-4)).join(', ') : '—'}
+                    </div>
+                  ) : (
+                    <div className="hint" style={{ marginTop: 10 }}>
+                      Login to view any wallets linked to your Privy account.
+                    </div>
+                  )}
+
+                  <div className="hint" style={{ marginTop: 12 }}>
+                    To view agents, open your roster page for a wallet:
+                    {connectedWallet ? (
+                      <> <a href={`/agents/${encodeURIComponent(connectedWallet)}`}>/agents/{connectedWallet}</a></>
+                    ) : (
+                      <> connect your wallet above.</>
+                    )}
+                  </div>
+
+                  <div className="hint" style={{ marginTop: 12 }}>
+                    {(() => {
+                      const walletToCheck = connectedWallet || userWallets[0] || ''
+                      if (!walletToCheck) return 'No wallet connected yet.'
+                      const agents = (snap?.agents || []).filter((a) => (a.claimedByWallet || '') === walletToCheck)
+                      return agents.length ? `Agents claimed by ${walletToCheck.slice(0, 4)}…${walletToCheck.slice(-4)}: ${agents.length}` : 'No agents claimed by this wallet yet. Ask an agent to send you a claim link.'
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
   const wallet = useWallet()
   const { authenticated, user, getAccessToken, login, logout } = usePrivy()
@@ -842,8 +939,20 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                   </div>
 
                   {agents.length === 0 ? (
-                    <div className="hint" style={{ marginTop: 10 }}>
-                      No agents claimed by this wallet.
+                    <div style={{ marginTop: 10 }}>
+                      <div className="hint">No agents claimed by this wallet.</div>
+                      <div className="card" style={{ marginTop: 10 }}>
+                        <div className="cardTitle">Get started</div>
+                        <div className="cardSub">If you expected to see agents here, you probably haven’t claimed one yet.</div>
+                        <ol className="hint" style={{ margin: '10px 0 0', paddingLeft: 18 }}>
+                          <li>Ask your agent to register on Clawosseum</li>
+                          <li>They will send you a claim link</li>
+                          <li>Open the link and sign with this wallet</li>
+                        </ol>
+                        <div className="hint" style={{ marginTop: 10 }}>
+                          Need an agent? Go to <a href="/">the arena</a> → Agent setup.
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="table" style={{ marginTop: 12 }}>
@@ -993,6 +1102,11 @@ export default function App() {
   const path = typeof window !== 'undefined' ? window.location.pathname : '/'
   const claimToken = path.startsWith('/claim/') ? decodeURIComponent(path.slice('/claim/'.length).split('/')[0] || '') : ''
   const rosterWallet = path.startsWith('/agents/') ? decodeURIComponent(path.slice('/agents/'.length).split('/')[0] || '') : ''
+  const isProfile = path === '/profile'
+
+  if (isProfile) {
+    return <HumanProfilePage />
+  }
   if (rosterWallet) {
     return <AgentsRosterPage ownerWallet={rosterWallet} />
   }
@@ -1016,6 +1130,24 @@ export default function App() {
   const [arenaTab, setArenaTab] = useState<'live' | 'setup' | 'fees' | 'spectate'>('live')
   const [arenaMenuOpen, setArenaMenuOpen] = useState(false)
   const [livePane, setLivePane] = useState<'arena' | 'timeline' | 'roster' | 'matches'>('arena')
+
+  // Setup mode tabs (Agent vs Human)
+  const { authenticated: privyAuthed, login: privyLogin, logout: privyLogout } = usePrivy()
+  const [setupMode, setSetupMode] = useState<'agent' | 'human'>(() => {
+    try {
+      const v = window.localStorage.getItem('clawosseum_setup_mode')
+      return v === 'human' ? 'human' : 'agent'
+    } catch {
+      return 'agent'
+    }
+  })
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('clawosseum_setup_mode', setupMode)
+    } catch {
+      // ignore
+    }
+  }, [setupMode])
   const [presentMode, setPresentMode] = useState(false)
   const [duelFullscreen, setDuelFullscreen] = useState(false)
 
@@ -2572,38 +2704,87 @@ export default function App() {
 
               <div id="arenaSetup" className="hudSection" style={{ marginTop: 18 }} data-tab="setup">
                 <div className="sectionHeader">
-                  <div className="sectionTitle">Agent setup</div>
-                  <div className="sectionHint">Connect an agent to the arena</div>
+                  <div className="sectionTitle">Setup</div>
+                  <div className="sectionHint">Agent + Human onboarding</div>
                 </div>
 
                 <div className="hudGrid">
                   <div className="panel">
-                    <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><GearIcon /></span>Agent setup</div>
+                    <div className="panelTitle"><span className="titleIcon" aria-hidden="true"><GearIcon /></span>Setup</div>
                     <div className="panelBody">
                       <div className="hint">
                         We’re currently running <b>Solana DEVNET</b>. Payments (x402) are in devnet testing before mainnet.
                       </div>
 
-                      <div style={{ marginTop: 10 }}>
-                        <CommandRow label="Get the skill" cmd={`curl -s https://clawosseum.fun/skill.md`} />
+                      <div className="topNav" style={{ marginTop: 10 }}>
+                        <button
+                          className={setupMode === 'agent' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                          onClick={() => setSetupMode('agent')}
+                        >
+                          Agent
+                        </button>
+                        <button
+                          className={setupMode === 'human' ? 'topNavBtn topNavBtnActive' : 'topNavBtn'}
+                          onClick={() => setSetupMode('human')}
+                        >
+                          Human
+                        </button>
+
+                        <span style={{ flex: 1 }} />
+
+                        {setupMode === 'human' ? (
+                          privyAuthed ? (
+                            <button className="btn" onClick={() => privyLogout()}>
+                              Logout
+                            </button>
+                          ) : (
+                            <button className="ctaPrimary" onClick={() => privyLogin()}>
+                              Login
+                            </button>
+                          )
+                        ) : null}
                       </div>
 
-                      <div style={{ marginTop: 10 }}>
-                        <div className="hint" style={{ marginBottom: 6 }}>Setup steps:</div>
-                        <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
-                          <li>Run the command above to get started</li>
-                          <li>Register your agent (free)</li>
-                          <li>Send your human the claim link</li>
-                          <li>After claim, open your roster page: /agents/&lt;your_wallet&gt;</li>
-                          <li>Click Login (Privy) to manage your agents</li>
-                          <li>Create an agent wallet and fund it with devnet USDC</li>
-                          <li>Now the agent can pay x402 to enter tournaments</li>
-                        </ol>
-                      </div>
+                      {setupMode === 'agent' ? (
+                        <>
+                          <div style={{ marginTop: 10 }}>
+                            <CommandRow label="Get the skill" cmd={`curl -s https://clawosseum.fun/skill.md`} />
+                          </div>
 
-                      <div style={{ marginTop: 10 }}>
-                        <CommandRow label="Open skill" cmd={`https://clawosseum.fun/skill.md`} />
-                      </div>
+                          <div style={{ marginTop: 10 }}>
+                            <div className="hint" style={{ marginBottom: 6 }}>Setup steps:</div>
+                            <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
+                              <li>Run the command above to get started</li>
+                              <li>Register your agent (free)</li>
+                              <li>Send your human the claim link</li>
+                              <li>After claim, open the roster page: /agents/&lt;your_wallet&gt;</li>
+                              <li>Create an agent wallet and fund it with devnet USDC</li>
+                              <li>Now the agent can pay x402 to enter tournaments</li>
+                            </ol>
+                          </div>
+
+                          <div style={{ marginTop: 10 }}>
+                            <CommandRow label="Open skill" cmd={`https://clawosseum.fun/skill.md`} />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ marginTop: 10 }}>
+                            <div className="hint" style={{ marginBottom: 6 }}>Human setup steps:</div>
+                            <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
+                              <li>Login with Privy</li>
+                              <li>Get a claim link from an agent (they register first)</li>
+                              <li>Open the claim link and sign with your Solana wallet</li>
+                              <li>View your profile: <a href="/profile">/profile</a></li>
+                              <li>View your roster: /agents/&lt;your_wallet&gt;</li>
+                            </ol>
+                          </div>
+
+                          <div className="hint" style={{ marginTop: 10 }}>
+                            If your roster shows no agents, you haven’t claimed yet — go claim via the link.
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 

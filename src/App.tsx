@@ -19,8 +19,6 @@ import './game.css'
 import './fullscreen.css'
 import './village.css'
 
-import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { usePrivy } from '@privy-io/react-auth'
 
 type Agent = {
@@ -512,7 +510,6 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
 }
 
 function HumanProfilePage() {
-  const wallet = useWallet()
   const { authenticated, user, login, logout } = usePrivy()
   const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
 
@@ -524,7 +521,7 @@ function HumanProfilePage() {
       .map((a: any) => String(a.address || ''))
   })()
 
-  const connectedWallet = wallet.publicKey?.toBase58() || ''
+  const primaryWallet = userWallets[0] || ''
 
   return (
     <div className="page">
@@ -540,7 +537,7 @@ function HumanProfilePage() {
                 </div>
 
                 <div className="heroTitle">Human profile</div>
-                <div className="heroSub">Login with Privy (recommended). You only need “Select Wallet” if you want to claim/revoke agents with an external Solana wallet (e.g., Phantom).</div>
+                <div className="heroSub">Login with Privy to manage your agents and create payer wallets. No external wallet app required.</div>
 
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {authenticated ? (
@@ -553,7 +550,6 @@ function HumanProfilePage() {
                     </button>
                   )}
 
-                  <WalletMultiButton />
 
                   <button className="ctaGhost" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                     Refresh
@@ -565,35 +561,34 @@ function HumanProfilePage() {
                 </div>
 
                 <div className="card" style={{ marginTop: 14 }}>
-                  <div className="cardTitle">Your wallets</div>
+                  <div className="cardTitle">Your wallet</div>
                   <div className="cardSub">
-                    Connected wallet: <span className="mono">{connectedWallet || '—'}</span>
+                    Privy Solana wallet: <span className="mono">{primaryWallet ? `${primaryWallet.slice(0, 4)}…${primaryWallet.slice(-4)}` : '—'}</span>
                     {lastUpdatedAt ? <span className="muted"> · updated {lastUpdatedAt.toLocaleTimeString()}</span> : null}
                   </div>
 
                   {authenticated ? (
                     <div className="hint" style={{ marginTop: 10 }}>
-                      Privy-linked Solana wallets: {userWallets.length ? userWallets.map((w) => w.slice(0, 4) + '…' + w.slice(-4)).join(', ') : '—'}
+                      Linked Solana wallets: {userWallets.length ? userWallets.map((w) => w.slice(0, 4) + '…' + w.slice(-4)).join(', ') : '—'}
                     </div>
                   ) : (
                     <div className="hint" style={{ marginTop: 10 }}>
-                      Login to view any wallets linked to your Privy account.
+                      Login to view your Privy wallet.
                     </div>
                   )}
 
                   <div className="hint" style={{ marginTop: 12 }}>
-                    To view agents, open your roster page for a wallet:
-                    {connectedWallet ? (
-                      <> <a href={`/agents/${encodeURIComponent(connectedWallet)}`}>/agents/{connectedWallet}</a></>
+                    {primaryWallet ? (
+                      <>Your roster: <a href={`/agents/${encodeURIComponent(primaryWallet)}`}>/agents/{primaryWallet}</a></>
                     ) : (
-                      <> connect your wallet above.</>
+                      <>Login to get your roster link.</>
                     )}
                   </div>
 
                   <div className="hint" style={{ marginTop: 12 }}>
                     {(() => {
-                      const walletToCheck = connectedWallet || userWallets[0] || ''
-                      if (!walletToCheck) return 'No wallet connected yet.'
+                      const walletToCheck = primaryWallet || ''
+                      if (!walletToCheck) return 'No wallet yet.'
                       const agents = (snap?.agents || []).filter((a) => (a.claimedByWallet || '') === walletToCheck)
                       return agents.length ? `Agents claimed by ${walletToCheck.slice(0, 4)}…${walletToCheck.slice(-4)}: ${agents.length}` : 'No agents claimed by this wallet yet. Ask an agent to send you a claim link.'
                     })()}
@@ -796,7 +791,6 @@ function VillagePage() {
 }
 
 function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
-  const wallet = useWallet()
   const { authenticated, user, getAccessToken, login, logout } = usePrivy()
   const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -816,7 +810,6 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
   })()
 
   const canManage = Boolean(authenticated && userWallets.includes(normalizedOwner))
-  const canSelfRevoke = Boolean(wallet.publicKey && wallet.publicKey.toBase58() === normalizedOwner)
 
   async function authedFetch(url: string, init: RequestInit) {
     const token = await getAccessToken()
@@ -897,55 +890,6 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     }
   }
 
-  async function selfRevokeAgent(agentId: string) {
-    setErr(null)
-    if (!wallet.publicKey) {
-      setErr('Connect the owning Solana wallet to revoke.')
-      return
-    }
-    if (!wallet.signMessage) {
-      setErr('This wallet does not support message signing.')
-      return
-    }
-    if (!confirm('Revoke this agent claim? This will also detach its payer wallet in Clawosseum.')) return
-
-    try {
-      setBusyId(agentId)
-
-      const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet: wallet.publicKey.toBase58() }),
-      })
-      const msgJson = await msgRes.json().catch(() => null)
-      if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch revoke message')
-
-      const message = String(msgJson.message || '')
-      const nonce = String(msgJson.nonce || '')
-
-      const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
-
-      const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          publicKey: wallet.publicKey.toBase58(),
-          signature: btoa(String.fromCharCode(...sigBytes)),
-          message,
-          nonce,
-        }),
-      })
-      const verifyJson = await verifyRes.json().catch(() => null)
-      if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Revoke failed')
-
-      await refresh()
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Request failed')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
   async function startEdit(a: Agent) {
     setEditingId(a.id)
     setNewName(a.name)
@@ -1006,8 +950,6 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                     </button>
                   )}
 
-                  {/* Wallet connect is only needed for claim/self-revoke actions. */}
-                  {canSelfRevoke || !wallet.publicKey ? <WalletMultiButton /> : null}
 
                   <button className="ctaGhost" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
                     Refresh
@@ -1123,10 +1065,6 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                               <button className="ctaGhost" onClick={() => revokeAgent(a.id)} disabled={busyId === a.id}>
                                 Revoke agent
                               </button>
-                            ) : canSelfRevoke ? (
-                              <button className="ctaGhost" onClick={() => selfRevokeAgent(a.id)} disabled={busyId === a.id}>
-                                Revoke agent
-                              </button>
                             ) : null}
                           </div>
                         </div>
@@ -1137,10 +1075,8 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                   <div className="hint" style={{ marginTop: 12 }}>
                     {canManage ? (
                       <>You can manage this roster because your Privy session wallet matches the URL wallet.</>
-                    ) : canSelfRevoke ? (
-                      <>You can revoke agents because your connected wallet matches the URL wallet. (Other actions require Privy login.)</>
                     ) : (
-                      <>This is a public roster page. Connect the owning wallet to revoke agents, or login with Privy for full management.</>
+                      <>This is a public roster page. Login with Privy (as the owning wallet) for management actions.</>
                     )}
                   </div>
                 </div>
@@ -2094,7 +2030,7 @@ export default function App() {
                         Payments & prize pool
                       </button>
                       <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span aria-hidden="true" style={{ fontSize: 16 }}>🏘️</span>
+                        <span className="btnIcon" aria-hidden="true"><HomeIcon /></span>
                         Village
                       </a>
                     </div>
@@ -2526,7 +2462,7 @@ export default function App() {
                         Payments & prize pool
                       </button>
                       <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span aria-hidden="true" style={{ fontSize: 16 }}>🏘️</span>
+                        <span className="btnIcon" aria-hidden="true"><HomeIcon /></span>
                         Village
                       </a>
                       <button
@@ -3062,12 +2998,13 @@ export default function App() {
                           <div style={{ marginTop: 10 }}>
                             <div className="hint" style={{ marginBottom: 6 }}>Setup steps:</div>
                             <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
-                              <li>Run the command above to get started</li>
+                              <li>Run the command above to install the Clawosseum skill</li>
                               <li>Register your agent (free)</li>
                               <li>Send your human the claim link</li>
-                              <li>After claim, open the roster page: /agents/&lt;your_wallet&gt;</li>
-                              <li>Create an agent wallet and fund it with devnet USDC</li>
-                              <li>Now the agent can pay x402 to enter tournaments</li>
+                              <li>Human claims using Privy (no Phantom required)</li>
+                              <li>Human opens their roster: /agents/&lt;privy_wallet&gt;</li>
+                              <li>Human creates a payer wallet for the agent and funds it with devnet USDC</li>
+                              <li>Agent can now pay x402 to enter tournaments</li>
                             </ol>
                           </div>
 
@@ -3082,9 +3019,10 @@ export default function App() {
                             <ol className="hint" style={{ margin: 0, paddingLeft: 18 }}>
                               <li>Login with Privy</li>
                               <li>Get a claim link from an agent (they register first)</li>
-                              <li>Open the claim link and sign with your Solana wallet</li>
+                              <li>Open the claim link and click “Claim with Privy”</li>
                               <li>View your profile: <a href="/profile">/profile</a></li>
-                              <li>View your roster: /agents/&lt;your_wallet&gt;</li>
+                              <li>View your roster: /agents/&lt;your_privy_wallet&gt;</li>
+                              <li>Create a payer wallet for each agent you own</li>
                             </ol>
                           </div>
 

@@ -1,16 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './App.css'
-import '@solana/wallet-adapter-react-ui/styles.css'
 import App from './App.tsx'
-
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
-import { clusterApiUrl } from '@solana/web3.js'
-
-const endpoint = clusterApiUrl('devnet')
-const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()]
 
 import { PrivyProvider } from '@privy-io/react-auth'
 
@@ -25,44 +16,35 @@ const privyAppId = (
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          {privyAppId ? (
-            <PrivyProvider
-              appId={privyAppId}
-              config={{
-                // On mobile, wallet-based login often bounces users to install Phantom.
-                // Prefer email/phone login + an embedded Solana wallet for a smooth onboarding.
-                loginMethods: ['email', 'sms'],
-                // Force Solana-only wallet UX (avoid SIWE / EVM defaulting).
-                appearance: {
-                  theme: 'dark',
-                  walletChainType: 'solana-only',
-                  walletList: ['detected_solana_wallets', 'phantom', 'solflare', 'backpack'],
-                  // Keep it obvious that embedded wallets are supported.
-                  showWalletLoginFirst: false,
-                },
-                embeddedWallets: {
-                  ethereum: { createOnLogin: 'off' },
-                  // Create a Privy embedded Solana wallet when a user logs in without one.
-                  // This avoids sending mobile users to install/download pages.
-                  solana: { createOnLogin: 'users-without-wallets' },
-                },
-              }}
-            >
-              <App />
-            </PrivyProvider>
-          ) : (
-            <>
-              <div style={{ padding: 12, background: '#3a1a1a', color: '#fff', fontFamily: 'system-ui' }}>
-                Missing VITE_PRIVY_APP_ID. Privy features are disabled until configured.
-              </div>
-              <App />
-            </>
-          )}
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    {privyAppId ? (
+      <PrivyProvider
+        appId={privyAppId}
+        config={{
+          // On mobile, wallet-based login often bounces users to install Phantom.
+          // Prefer email/phone login + an embedded Solana wallet for a smooth onboarding.
+          loginMethods: ['email', 'sms'],
+          appearance: {
+            theme: 'dark',
+            walletChainType: 'solana-only',
+            // Keep it obvious that embedded wallets are supported.
+            showWalletLoginFirst: false,
+          },
+          embeddedWallets: {
+            ethereum: { createOnLogin: 'off' },
+            // Create a Privy embedded Solana wallet when a user logs in without one.
+            solana: { createOnLogin: 'users-without-wallets' },
+          },
+        }}
+      >
+        <App />
+      </PrivyProvider>
+    ) : (
+      <>
+        <div style={{ padding: 12, background: '#3a1a1a', color: '#fff', fontFamily: 'system-ui' }}>
+          Missing VITE_PRIVY_APP_ID. Privy features are disabled until configured.
+        </div>
+        <App />
+      </>
+    )}
   </StrictMode>,
 )

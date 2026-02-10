@@ -10,6 +10,7 @@ import {
   MoonIcon,
   OpenInNewWindowIcon,
   PersonIcon,
+  HomeIcon,
   SunIcon,
   TargetIcon,
 } from '@radix-ui/react-icons'
@@ -653,6 +654,7 @@ function VillagePage() {
           <div className="arenaTopRight">
             <div className="topNav">
               <a className="topNavBtn topNavBtnActive" href="/village" style={{ textDecoration: 'none' }} aria-current="page">
+                <span className="btnIcon" aria-hidden="true"><HomeIcon /></span>
                 Village
               </a>
               <button className="topNavBtn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
@@ -2091,7 +2093,8 @@ export default function App() {
                       >
                         Payments & prize pool
                       </button>
-                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none' }}>
+                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span aria-hidden="true" style={{ fontSize: 16 }}>🏘️</span>
                         Village
                       </a>
                     </div>
@@ -2522,7 +2525,8 @@ export default function App() {
                       >
                         Payments & prize pool
                       </button>
-                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none' }}>
+                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span aria-hidden="true" style={{ fontSize: 16 }}>🏘️</span>
                         Village
                       </a>
                       <button

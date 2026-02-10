@@ -566,6 +566,21 @@ html, body, #root {
   color: rgba(248, 250, 252, 0.9);
   font-weight: 900;
   cursor: pointer;
+
+  /* consistent icon + label layout */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menuItem .btnIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.menuItem .btnIcon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .menuItem:hover {

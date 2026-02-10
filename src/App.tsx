@@ -2003,9 +2003,7 @@ export default function App() {
                           }, 0)
                         }}
                         role="menuitem"
-                      >
-                        Enter the arena
-                      </button>
+                      ><span className="btnIcon" aria-hidden="true"><TargetIcon /></span>Enter the arena</button>
                       <button
                         className="menuItem"
                         onClick={() => {
@@ -2019,9 +2017,7 @@ export default function App() {
                           }, 0)
                         }}
                         role="menuitem"
-                      >
-                        Watch demo
-                      </button>
+                      ><span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>Watch demo</button>
                       <button
                         className="menuItem"
                         onClick={() => {
@@ -2034,10 +2030,8 @@ export default function App() {
                           }, 0)
                         }}
                         role="menuitem"
-                      >
-                        Payments & prize pool
-                      </button>
-                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      ><span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>Payments & prize pool</button>
+                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none' }}>
                         <span className="btnIcon" aria-hidden="true"><HomeIcon /></span>
                         Village
                       </a>
@@ -2444,9 +2438,7 @@ export default function App() {
                           document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         role="menuitem"
-                      >
-                        Spectate
-                      </button>
+                      ><span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>Spectate</button>
                       <button
                         className={arenaTab === 'setup' ? 'menuItem menuItemActive' : 'menuItem'}
                         onClick={() => {
@@ -2455,9 +2447,7 @@ export default function App() {
                           document.getElementById('arenaSetup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         role="menuitem"
-                      >
-                        Setup
-                      </button>
+                      ><span className="btnIcon" aria-hidden="true"><GearIcon /></span>Setup</button>
                       <button
                         className={arenaTab === 'fees' ? 'menuItem menuItemActive' : 'menuItem'}
                         onClick={() => {
@@ -2466,10 +2456,8 @@ export default function App() {
                           document.getElementById('arenaFees')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         role="menuitem"
-                      >
-                        Payments & prize pool
-                      </button>
-                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      ><span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>Payments & prize pool</button>
+                      <a className="menuItem" href="/village" role="menuitem" style={{ textDecoration: 'none' }}>
                         <span className="btnIcon" aria-hidden="true"><HomeIcon /></span>
                         Village
                       </a>
@@ -2481,9 +2469,7 @@ export default function App() {
                           document.getElementById('arenaSpectator')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         role="menuitem"
-                      >
-                        Spectator link
-                      </button>
+                      ><span className="btnIcon" aria-hidden="true"><OpenInNewWindowIcon /></span>Spectator link</button>
                       <div className="menuDivider" role="separator" />
                       <button
                         className={presentMode ? 'menuItem menuItemActive' : 'menuItem'}
@@ -2494,6 +2480,7 @@ export default function App() {
                         role="menuitem"
                         title={presentMode ? 'Exit presentation mode' : 'Presentation mode'}
                       >
+                        <span className="btnIcon" aria-hidden="true"><EnterFullScreenIcon /></span>
                         {presentMode ? 'Exit presentation mode' : 'Presentation mode'}
                       </button>
                       <button
@@ -2509,7 +2496,7 @@ export default function App() {
                         role="menuitem"
                         title={demoOn ? 'Exit demo' : 'Watch demo match'}
                       >
-                        {demoOn ? 'Exit demo' : 'Watch demo'}
+                        <span className="btnIcon" aria-hidden="true"><ActivityLogIcon /></span>{demoOn ? 'Exit demo' : 'Watch demo'}
                       </button>
                     </div>
                   ) : null}

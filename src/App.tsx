@@ -1799,7 +1799,12 @@ export default function App() {
 
       {view === 'landing' ? (
         <div className="landing">
-          <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 14, marginBottom: 18 }}>
+          <div
+            className="arenaTopbar"
+            aria-label="Home topbar"
+            // On Home we want this to flow in the document (not overlay like the fixed Arena topbar).
+            style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', marginTop: 14, marginBottom: 18 }}
+          >
             <div className="arenaTopLeft">
               <button className="topBtn" onClick={() => {}} aria-current="page">
                 Home

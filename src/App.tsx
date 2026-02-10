@@ -541,7 +541,7 @@ function HumanProfilePage() {
 
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {authenticated ? (
-                    <button className="btn" onClick={() => logout()}>
+                    <button className="ctaGhost" onClick={() => logout()}>
                       Logout
                     </button>
                   ) : (
@@ -579,7 +579,13 @@ function HumanProfilePage() {
 
                   <div className="hint" style={{ marginTop: 12 }}>
                     {primaryWallet ? (
-                      <>Your roster: <a href={`/agents/${encodeURIComponent(primaryWallet)}`}>/agents/{primaryWallet}</a></>
+                      <>
+                        Your roster: <a href={`/agents/${encodeURIComponent(primaryWallet)}`}>/agents/{primaryWallet}</a>
+                        <span className="muted"> · </span>
+                        <a className="ctaGhost" href={`/agents/${encodeURIComponent(primaryWallet)}`} style={{ textDecoration: 'none', padding: '6px 10px', marginLeft: 8 }}>
+                          Open my agents
+                        </a>
+                      </>
                     ) : (
                       <>Login to get your roster link.</>
                     )}
@@ -941,7 +947,7 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                 <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   {/* Privy is the primary auth for management actions. */}
                   {authenticated ? (
-                    <button className="btn" onClick={() => logout()}>
+                    <button className="ctaGhost" onClick={() => logout()}>
                       Logout
                     </button>
                   ) : (

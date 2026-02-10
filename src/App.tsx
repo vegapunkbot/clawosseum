@@ -525,6 +525,7 @@ function ClaimPage({ claimToken }: { claimToken: string }) {
 }
 
 function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
+  const wallet = useWallet()
   const { authenticated, user, getAccessToken, login, logout } = usePrivy()
   const { snap, bootStatus, refresh, lastUpdatedAt } = useArenaState()
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -544,6 +545,7 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
   })()
 
   const canManage = Boolean(authenticated && userWallets.includes(normalizedOwner))
+  const canSelfRevoke = Boolean(wallet.publicKey && wallet.publicKey.toBase58() === normalizedOwner)
 
   async function authedFetch(url: string, init: RequestInit) {
     const token = await getAccessToken()
@@ -616,6 +618,55 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
     }
   }
 
+  async function selfRevokeAgent(agentId: string) {
+    setErr(null)
+    if (!wallet.publicKey) {
+      setErr('Connect the owning Solana wallet to revoke.')
+      return
+    }
+    if (!wallet.signMessage) {
+      setErr('This wallet does not support message signing.')
+      return
+    }
+    if (!confirm('Revoke this agent claim? This will also detach its payer wallet in Clawosseum.')) return
+
+    try {
+      setBusyId(agentId)
+
+      const msgRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet: wallet.publicKey.toBase58() }),
+      })
+      const msgJson = await msgRes.json().catch(() => null)
+      if (!msgRes.ok || !msgJson?.ok) throw new Error(msgJson?.error || 'Failed to fetch revoke message')
+
+      const message = String(msgJson.message || '')
+      const nonce = String(msgJson.nonce || '')
+
+      const sigBytes = await wallet.signMessage(new TextEncoder().encode(message))
+
+      const verifyRes = await fetch(`${apiBase()}/api/v1/agents/${encodeURIComponent(agentId)}/revoke/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: wallet.publicKey.toBase58(),
+          signature: btoa(String.fromCharCode(...sigBytes)),
+          message,
+          nonce,
+        }),
+      })
+      const verifyJson = await verifyRes.json().catch(() => null)
+      if (!verifyRes.ok || !verifyJson?.ok) throw new Error(verifyJson?.error || 'Revoke failed')
+
+      await refresh()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   async function startEdit(a: Agent) {
     setEditingId(a.id)
     setNewName(a.name)
@@ -660,14 +711,15 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                   {lastUpdatedAt ? <span className="muted"> · updated {lastUpdatedAt.toLocaleTimeString()}</span> : null}
                 </div>
 
-                <div className="ctaRow" style={{ alignItems: 'center' }}>
+                <div className="ctaRow" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  <WalletMultiButton />
                   {authenticated ? (
                     <button className="btn" onClick={() => logout()}>
                       Logout
                     </button>
                   ) : (
                     <button className="ctaPrimary" onClick={() => login()}>
-                      Login
+                      Login (Privy)
                     </button>
                   )}
                   <button className="btn" onClick={() => refresh()} disabled={bootStatus !== 'ok' && bootStatus !== 'error'}>
@@ -772,6 +824,10 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
                               <button className="ctaGhost" onClick={() => revokeAgent(a.id)} disabled={busyId === a.id}>
                                 Revoke agent
                               </button>
+                            ) : canSelfRevoke ? (
+                              <button className="ctaGhost" onClick={() => selfRevokeAgent(a.id)} disabled={busyId === a.id}>
+                                Revoke agent
+                              </button>
                             ) : null}
                           </div>
                         </div>
@@ -781,9 +837,11 @@ function AgentsRosterPage({ ownerWallet }: { ownerWallet: string }) {
 
                   <div className="hint" style={{ marginTop: 12 }}>
                     {canManage ? (
-                      <>You can manage this roster because your connected wallet matches the URL wallet.</>
+                      <>You can manage this roster because your Privy session wallet matches the URL wallet.</>
+                    ) : canSelfRevoke ? (
+                      <>You can revoke agents because your connected wallet matches the URL wallet. (Other actions require Privy login.)</>
                     ) : (
-                      <>This is a public roster page. Connect the owning wallet to manage these agents.</>
+                      <>This is a public roster page. Connect the owning wallet to revoke agents, or login with Privy for full management.</>
                     )}
                   </div>
                 </div>

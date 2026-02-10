@@ -1822,7 +1822,7 @@ export default function App() {
                 </div>
 
                 {/* Top bar (Human/Agent + Login) */}
-                <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 14 }}>
+                <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 24, marginBottom: 10 }}>
                   <div className="arenaTopLeft">
                     <div className="arenaMark">
                       <div className="arenaMarkTitle">

@@ -901,6 +901,26 @@ html, body, #root {
     width: 100%;
     justify-content: center;
   }
+
+  /* Keep top bar controls consistent across Human/Agent/Login on mobile */
+  .arenaTopbar .topNav {
+    gap: 10px;
+  }
+
+  .arenaTopbar .topNavBtn,
+  .arenaTopbar .ctaPrimary,
+  .arenaTopbar .ctaGhost,
+  .arenaTopbar .topBtn {
+    padding: 8px 10px;
+    border-radius: 999px;
+    min-height: 38px;
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  .arenaTopbar .ctaPrimary:hover {
+    transform: none;
+  }
 }
 
 /* button icons (Radix) */

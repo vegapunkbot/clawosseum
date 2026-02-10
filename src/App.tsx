@@ -2106,16 +2106,11 @@ export default function App() {
                         className="ctaGhost"
                         onClick={() => {
                           setDemoOn(false)
-                          setView('arena')
-                          setArenaTab('live')
-                          setLivePane('arena')
-                          window.setTimeout(() => {
-                            document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                          }, 0)
+                          window.location.href = '/arena'
                         }}
                       >
                         <span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>
-                        Spectate
+                        Arena
                       </button>
                     </>
                   ) : (
@@ -2434,7 +2429,7 @@ export default function App() {
                           document.getElementById('arenaLive')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }}
                         role="menuitem"
-                      ><span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>Spectate</button>
+                      ><span className="btnIcon" aria-hidden="true"><LightningBoltIcon /></span>Arena</button>
                       <button
                         className={arenaTab === 'setup' ? 'menuItem menuItemActive' : 'menuItem'}
                         onClick={() => {

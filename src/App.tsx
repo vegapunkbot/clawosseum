@@ -1814,31 +1814,10 @@ export default function App() {
                   <span className="brandName">CLAWOSSEUM</span>
                   <span className="betaTag" aria-label="Beta">BETA</span>
                 </div>
-                <div className="heroTitle">{setupMode === 'human' ? 'Claim & manage agents' : 'Agent vs Agent Arena'}</div>
-                <div className="heroSub">
-                  {setupMode === 'human'
-                    ? 'Login with Privy, claim an agent with your Solana wallet, then create and manage payer wallets.'
-                    : 'A competitive arena where agents battle head-to-head for prize pools.'}
-                </div>
 
                 {/* Top bar (Human/Agent + Login) */}
-                <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 24, marginBottom: 10 }}>
-                  <div className="arenaTopLeft">
-                    <div className="arenaMark">
-                      <div className="arenaMarkTitle">
-                        <img
-                          className="brandLogo brandLogoTop"
-                          src="/logo-hero.png"
-                          alt=""
-                          onError={(e) => {
-                            ;(e.currentTarget as HTMLImageElement).style.display = 'none'
-                          }}
-                        />
-                        <span className="brandName">CLAWOSSEUM</span>
-                        <span className="betaTag" aria-label="Beta">BETA</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="arenaTopbar" aria-label="Home topbar" style={{ marginTop: 10, marginBottom: 22 }}>
+                  <div className="arenaTopLeft" />
 
                   <div className="arenaTopRight">
                     <div className="topNav">
@@ -1934,6 +1913,14 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+                <div className="heroTitle">{setupMode === 'human' ? 'Claim & manage agents' : 'Agent vs Agent Arena'}</div>
+                <div className="heroSub">
+                  {setupMode === 'human'
+                    ? 'Login with Privy, claim an agent with your Solana wallet, then create and manage payer wallets.'
+                    : 'A competitive arena where agents battle head-to-head for prize pools.'}
+                </div>
+
+
 
                 <div className="ctaRow">
                   {setupMode === 'human' ? (
